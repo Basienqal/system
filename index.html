@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<title>System Zabezpieczenia Tras i Biegów Masowych v3.1</title>
+<title>System Zabezpieczenia Tras i Biegów Masowych v3.2</title>
 
 <!-- Stylowanie Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -126,6 +126,22 @@ body {
     display: block;
 }
 
+/* Znak drogowy na mapie - czysty kontur znaku bez białego kółka */
+.custom-marker-icon.icon-znak-drogowy {
+    width: 28px !important;
+    height: 28px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55));
+}
+.custom-marker-icon.icon-znak-drogowy svg {
+    width: 26px !important;
+    height: 26px !important;
+}
+
 /* Znaczniki kilometrów na mapie */
 .km-marker-badge {
     display: flex !important;
@@ -165,6 +181,15 @@ body {
 }
 .type-badge:active { transform: none; }
 .type-badge svg { width: 12px; height: 12px; }
+.type-badge.icon-znak-drogowy {
+    width: 20px !important;
+    height: 20px !important;
+    filter: none;
+}
+.type-badge.icon-znak-drogowy svg {
+    width: 18px !important;
+    height: 18px !important;
+}
 
 .icon-wolontariusz { border: 2px solid #007bff !important; }
 .icon-lider        { border: 2px solid #dc3545 !important; }
@@ -176,7 +201,22 @@ body {
 .icon-zywieniowy   { border: 2px solid #0d6efd !important; }
 .icon-sedzia       { background: #e0a800; }
 .icon-sluza        { border: 2px solid #20c997 !important; }
-.icon-znak-drogowy { background: #fff3cd; border: 2px solid #d97706 !important; }
+
+.sign-preview-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 8px;
+    margin: 4px 0;
+}
+.sign-preview-box svg {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+}
 
 .btn-ctrl {
     width: 100%;
@@ -310,7 +350,7 @@ body {
     border-radius: 3px;
 }
 
-.popup-textarea { height: 50px; resize: vertical; }
+.popup-textarea { height: 48px; resize: vertical; }
 .popup-btn-container { margin-top: 8px; display: flex; gap: 4px; }
 .popup-btn { padding: 5px 8px; cursor: pointer; font-size: 12px; font-weight: bold; border-radius: 3px; border: 1px solid #ccc; }
 
@@ -321,13 +361,22 @@ body {
     font-size: 10px;
     font-weight: bold;
 }
+.badge-sign-code {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #664d03;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+}
 </style>
 </head>
 
 <body>
 
 <div id="panel">
-    <h2 style="margin-top:0; margin-bottom:6px; font-size:19px; color:#333;">Zabezpieczenie Biegu <small style="font-size:11px; color:#888;">v3.1</small></h2>
+    <h2 style="margin-top:0; margin-bottom:6px; font-size:19px; color:#333;">Zabezpieczenie Biegu <small style="font-size:11px; color:#888;">v3.2</small></h2>
 
     <div class="autosave-badge" id="autosaveStatus">
         <span><i class="fa-solid fa-floppy-disk"></i> Autozapis aktywny</span>
@@ -462,7 +511,6 @@ body {
         <div id="drawInfoBox" style="display:none; margin-top:6px; font-size:11px; color:#555; background:#e9ecef; padding:6px; border-radius:3px;">
             <i class="fa-solid fa-circle-info"></i> Klikaj na mapie, aby stawiać kolejne punkty trasy.<br>
 
-            <!-- LICZNIK ODLEGŁOŚCI -->
             <div id="drawDistanceText" style="margin-top:6px; font-size:12px; font-weight:bold; color:#007bff; background:#fff; padding:4px 6px; border-radius:3px; border:1px solid #ced4da;">
                 <i class="fa-solid fa-ruler-horizontal"></i> Długość trasy: 0 m
             </div>
@@ -487,7 +535,7 @@ body {
     <div id="filterContainer" style="max-height: 170px; overflow-y: auto; background:#f8f9fa; padding:5px; border-radius:4px; border:1px solid #ddd;"></div>
 
     <div class="section-title">Wyszukiwarka i Filtr Sektora</div>
-    <input type="text" id="searchPointInput" class="search-box" placeholder="Szukaj (numer, znak, sektor, tel, uwagi)..." oninput="applyFiltersAndRefresh()">
+    <input type="text" id="searchPointInput" class="search-box" placeholder="Szukaj (numer, B-36, sektor, tel, uwagi)..." oninput="applyFiltersAndRefresh()">
     <select id="sectorFilterSelect" class="search-box" onchange="applyFiltersAndRefresh()">
         <option value="__ALL__">Wszystkie sektory</option>
     </select>
@@ -508,6 +556,14 @@ body {
         <tbody id="sectorStatTableBody"></tbody>
     </table>
 
+    <div class="section-title">Zestawienie Znaków Drogowych</div>
+    <table class="stat-table">
+        <thead>
+            <tr><th>Znak</th><th>Opis</th><th>Szt.</th></tr>
+        </thead>
+        <tbody id="signStatTableBody"></tbody>
+    </table>
+
     <div class="section-title">Lista Punktów (<span id="pointsCount">0</span>)</div>
     <div id="pointList" style="max-height:300px; overflow-y:auto; margin-top:5px;"></div>
 </div>
@@ -522,7 +578,7 @@ body {
 <script>
 const STORAGE_KEY = "bieg_zabezpieczenie_v3_autosave";
 
-// ---------- Ikony SVG ----------
+// ---------- Ikony SVG służb i wyposażenia ----------
 const SVG_INFORMACYJNA_BLACK = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 119 168' width='16' height='16'><path d='M684.825,274.427C682.043,274.454 679.888,278.598 680.48,282.056C680.48,282.056 680.48,291.417 688.989,291.417C697.499,291.417 697.499,282.056 697.499,282.056C697.499,280.638 697.728,275.102 694.412,274.713M677.075,301.144L677.075,316.947L697.087,293.359C696.611,293.219 696.119,293.119 695.598,293.119L682.182,293.119C675.276,293.4 677.407,297.416 677.075,301.144ZM697.087,293.359L677.075,316.947L700.904,316.947L700.904,298.425C701.572,293.292 697.988,293.774 697.087,293.359ZM689.108,294.246C692.008,294.246 694.635,295.431 696.537,297.346C698.44,299.259 699.616,301.899 699.616,304.812C699.616,307.724 698.44,310.364 696.537,312.278C694.635,314.192 692.008,315.377 689.108,315.377C686.207,315.377 683.581,314.192 681.678,312.278C679.776,310.364 678.6,307.724 678.6,304.812C678.6,301.899 679.776,299.259 681.678,297.346C683.581,295.431 686.207,294.246 689.108,294.246ZM694.819,299.055C693.359,297.586 691.339,296.678 689.108,296.678C686.876,296.678 684.856,297.586 683.397,299.055C681.935,300.526 681.031,302.561 681.031,304.812C681.031,307.062 681.935,309.097 683.397,310.568C684.856,312.037 686.876,312.945 689.108,312.945C691.339,312.945 693.359,312.037 694.819,310.568C696.28,309.097 697.184,307.062 697.184,304.812C697.184,302.561 696.28,300.526 694.819,299.055ZM687.604,299.4L690.612,299.4L690.612,301.441L687.604,301.441L687.604,299.4ZM687.604,302.378L690.612,302.378L690.612,310.223L687.604,310.223L687.604,302.378Z' fill='#000000' transform='matrix(3.51264,0,0,3.92445,-2361.91,-1077.12)'/></svg>`;
 const SVG_RUCHEM_ORANGE = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 119 168' width='16' height='16'><path d='M642.638,109.482L658.992,109.482C656.224,108.391 653.665,106.211 650.69,106.211C647.793,106.211 645.322,108.391 642.638,109.482ZM642.638,111.117L642.638,115.205C642.638,115.205 642.638,124.2 650.815,124.2C658.992,124.2 658.992,115.205 658.992,115.205L658.992,111.117L642.638,111.117ZM629.504,115.978C627.7,116.006 626.26,117.49 626.284,119.294L626.284,132.377C626.284,134.47 628.221,136.024 630.265,135.571L639.368,133.546L639.368,147.137C641.899,143.92 655.945,125.835 655.665,125.835L644.274,125.835L632.826,128.301L632.826,119.294C632.851,117.45 631.348,115.949 629.504,115.978ZM659.775,126.333L642.462,148.731L662.263,148.731L662.263,130.933C662.905,126.001 660.641,126.733 659.775,126.333' fill='#e84824' transform='matrix(3.57579,0,0,3.995,-2244.93,-425.452)'/></svg>`;
 const SVG_PORZADKOWA = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 119 168' width='16' height='16'><g transform='matrix(3.53411,0,0,3.90062,-1655.02,-315.577)'><g transform='matrix(1,0,0,1,0,-390.34)'><path d='M485.478,471.54C477.903,471.424 475.748,475.568 476.339,479.026C476.339,479.026 476.339,488.386 484.849,488.386C493.359,488.386 493.359,479.026 493.359,479.026C493.359,477.607 493.588,472.072 485.478,471.54ZM492.577,490.021L478.041,490.088C471.136,490.369 473.267,494.385 472.936,498.113L472.898,513.916L496.763,513.916L496.763,495.394C497.432,490.261 494.598,490.368 492.577,490.021Z' fill='#d2d826' stroke='#0d070c' stroke-width='1.12px'/></g><g transform='matrix(1,0,0,1,0,-351.934)'><rect x='472.908' y='471.424' width='23.855' height='4.086' fill='#0d070c' stroke='#1c1917' stroke-width='0.63px'/></g><g transform='matrix(1,0,0,1,0,-375.78)'><rect x='484.001' y='475.501' width='2.251' height='19.779' fill='#0d070c' stroke='#1c1917' stroke-width='0.63px'/></g><text x='488.821px' y='108.702px' style="font-family:'Arial-Black', 'Arial', sans-serif;font-weight:900;font-size:9.713px;" fill='#1c1917'>S</text><g transform='matrix(1,0,0,1,0,-375.78)'><path d='M472.908,495.27L484.077,495.279L484.001,475.501' fill='none' stroke='#1c1917' stroke-width='0.63px'/></g><g transform='matrix(1,0,0,1,0,-375.79)'><path d='M496.679,495.27L486.252,495.289L486.177,475.501' fill='none' stroke='#1c1917' stroke-width='0.63px'/></g></g></svg>`;
@@ -533,7 +589,69 @@ const SVG_BADIERKI = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24
 const SVG_TOALETA = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><text x='12' y='16.5' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-weight='bold' font-size='11.5' fill='#ffffff'>WC</text></svg>`;
 const SVG_ZYWIENIOWY = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='#0d6efd'><path d='M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z'/></svg>`;
 const SVG_SEDZIA = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='#ffffff'><path d='M12 2c1.1 0 2 .9 2 2v1.17c3.41.44 6 3.32 6 6.83 0 3.87-3.13 7-7 7s-7-3.13-7-7c0-3.51 2.59-6.39 6-6.83V4c0-1.1.9-2 2-2zm0 16c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-1-8h2v3h-2v-3zm0 4h2v2h-2v-2z'/></svg>`;
-const SVG_ZNAK_DROGOWY = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><polygon points='12,3 22,20 2,20' fill='#ffc107' stroke='#dc3545' stroke-width='2.2' stroke-linejoin='round'/><line x1='12' y1='9' x2='12' y2='14.5' stroke='#111111' stroke-width='2' stroke-linecap='round'/><circle cx='12' cy='17.2' r='1.2' fill='#111111'/></svg>`;
+const SVG_ZNAK_DEFAULT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><polygon points='12,2.5 22.5,20.5 1.5,20.5' fill='#ffdd00' stroke='#d32f2f' stroke-width='2.4' stroke-linejoin='round'/><line x1='12' y1='8.5' x2='12' y2='14.5' stroke='#111' stroke-width='2.2' stroke-linecap='round'/><circle cx='12' cy='17.5' r='1.3' fill='#111'/></svg>`;
+
+// ---------- BAZA ZNAKÓW DROGOWYCH Z DEDYKOWANYMI GRAFIKAMI SVG ----------
+const TRAFFIC_SIGNS = {
+    "B-1": {
+        name: "B-1: Zakaz ruchu w obu kierunkach",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.8'/></svg>`
+    },
+    "B-2": {
+        name: "B-2: Zakaz wjazdu",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#d32f2f' stroke='#ffffff' stroke-width='1.2'/><rect x='6' y='13.2' width='20' height='5.6' rx='0.8' fill='#ffffff'/></svg>`
+    },
+    "B-21": {
+        name: "B-21: Zakaz skręcania w lewo",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.5'/><path d='M19 23 V14 Q19 11 16 11 H11' fill='none' stroke='#111' stroke-width='2.4' stroke-linecap='round'/><polygon points='8,11 12.5,8 12.5,14' fill='#111'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='2.8'/></svg>`
+    },
+    "B-22": {
+        name: "B-22: Zakaz skręcania w prawo",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.5'/><path d='M13 23 V14 Q13 11 16 11 H21' fill='none' stroke='#111' stroke-width='2.4' stroke-linecap='round'/><polygon points='24,11 19.5,8 19.5,14' fill='#111'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='2.8'/></svg>`
+    },
+    "B-35": {
+        name: "B-35: Zakaz postoju",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.8'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.4'/></svg>`
+    },
+    "B-36": {
+        name: "B-36: Zakaz zatrzymywania się",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.8'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.2'/><line x1='25' y1='7' x2='7' y2='25' stroke='#d32f2f' stroke-width='3.2'/></svg>`
+    },
+    "B-36 + T-24": {
+        name: "B-36 + T-24: Zakaz zatrzymywania się (odholowanie)",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 36'><circle cx='16' cy='12.5' r='11' fill='#1565c0' stroke='#d32f2f' stroke-width='3'/><line x1='9' y1='5.5' x2='23' y2='19.5' stroke='#d32f2f' stroke-width='2.6'/><line x1='23' y1='5.5' x2='9' y2='19.5' stroke='#d32f2f' stroke-width='2.6'/><rect x='5' y='25.5' width='22' height='9' rx='1' fill='#ffffff' stroke='#111' stroke-width='1.1'/><text x='16' y='32' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='6.5' fill='#111'>T-24</text></svg>`
+    },
+    "C-2": {
+        name: "C-2: Nakaz jazdy w prawo za znakiem",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><path d='M12 24 V15 Q12 12 15 12 H21' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='25,12 19.5,8.2 19.5,15.8' fill='#ffffff'/></svg>`
+    },
+    "C-4": {
+        name: "C-4: Nakaz jazdy w lewo za znakiem",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><path d='M20 24 V15 Q20 12 17 12 H11' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='7,12 12.5,8.2 12.5,15.8' fill='#ffffff'/></svg>`
+    },
+    "C-5": {
+        name: "C-5: Nakaz jazdy prosto",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><line x1='16' y1='24' x2='16' y2='11' stroke='#ffffff' stroke-width='3' stroke-linecap='round'/><polygon points='16,6.5 11.5,13 20.5,13' fill='#ffffff'/></svg>`
+    },
+    "C-9": {
+        name: "C-9: Nakaz jazdy z prawej strony znaku",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><line x1='10' y1='9' x2='21' y2='20' stroke='#ffffff' stroke-width='3' stroke-linecap='round'/><polygon points='23.5,22.5 16.5,21.5 22.5,15.5' fill='#ffffff'/></svg>`
+    },
+    "A-30": {
+        name: "A-30: Inne niebezpieczeństwo",
+        svg: SVG_ZNAK_DEFAULT
+    },
+    "A-30 + Biegacze": {
+        name: "A-30 + T-27/Tabliczka: Uwaga biegacze / zawody",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 36'><polygon points='16,2 28,22 4,22' fill='#ffdd00' stroke='#d32f2f' stroke-width='2.4' stroke-linejoin='round'/><line x1='16' y1='8' x2='16' y2='15' stroke='#111' stroke-width='2.2' stroke-linecap='round'/><circle cx='16' cy='18.2' r='1.3' fill='#111'/><rect x='4' y='24.5' width='24' height='10' rx='1' fill='#ffdd00' stroke='#111' stroke-width='1.1'/><text x='16' y='31.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='6.2' fill='#111'>BIEG</text></svg>`
+    },
+    "D-4a": {
+        name: "D-4a: Droga bez przejazdu (ślepa ulica)",
+        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='3' width='26' height='26' rx='2' fill='#1565c0' stroke='#ffffff' stroke-width='1.5'/><rect x='14' y='11' width='4' height='15' fill='#ffffff'/><rect x='10' y='8' width='12' height='3.5' fill='#d32f2f'/></svg>`
+    }
+};
+
+const DEFAULT_SIGN_CODE = "B-1";
 
 const CONFIG_TYPES = {
     "Służba informacyjna":      { prefix: "INF",  className: "icon-wolontariusz", svgContent: SVG_INFORMACYJNA_BLACK, color: "#007bff" },
@@ -546,7 +664,7 @@ const CONFIG_TYPES = {
     "Punkt żywieniowy":         { prefix: "ZYW",  className: "icon-zywieniowy",   svgContent: SVG_ZYWIENIOWY,         color: "#0d6efd" },
     "Sędzia":                   { prefix: "SED",  className: "icon-sedzia",       svgContent: SVG_SEDZIA,             color: "#e0a800" },
     "Śluza":                    { prefix: "SLU",  className: "icon-sluza",        svgContent: SVG_SLUZA,              color: "#20c997" },
-    "Znak drogowy":             { prefix: "ZNAK", className: "icon-znak-drogowy", svgContent: SVG_ZNAK_DROGOWY,       color: "#d97706" }
+    "Znak drogowy":             { prefix: "ZNAK", className: "icon-znak-drogowy", svgContent: TRAFFIC_SIGNS["B-1"].svg, color: "#d32f2f" }
 };
 
 const CONFIG_ROUTES = {
@@ -567,20 +685,45 @@ function normalizeType(typ) {
     return typ;
 }
 
-function iconHtml(type) {
+function getSignSvg(signCode) {
+    if (signCode && TRAFFIC_SIGNS[signCode]) {
+        return TRAFFIC_SIGNS[signCode].svg;
+    }
+    return SVG_ZNAK_DEFAULT;
+}
+
+function iconHtml(type, signCode = null) {
+    if (type === "Znak drogowy") {
+        return getSignSvg(signCode);
+    }
     const c = CONFIG_TYPES[type];
     return c && c.svgContent ? c.svgContent : '<i class="fa-solid fa-location-dot"></i>';
 }
 
-function badgeHtml(type) {
+function badgeHtml(type, signCode = null) {
     const c = CONFIG_TYPES[type];
-    return `<span class="custom-marker-icon type-badge ${c ? c.className : ''}">${iconHtml(type)}</span>`;
+    return `<span class="custom-marker-icon type-badge ${c ? c.className : ''}">${iconHtml(type, signCode)}</span>`;
+}
+
+function buildSignOptionsHtml(selectedCode) {
+    return Object.entries(TRAFFIC_SIGNS).map(([code, info]) => {
+        const sel = code === selectedCode ? "selected" : "";
+        return `<option value="${escapeHtml(code)}" ${sel}>${escapeHtml(info.name)}</option>`;
+    }).join("");
+}
+
+function updateSignPreview(selectId, previewId) {
+    const sel = document.getElementById(selectId);
+    const box = document.getElementById(previewId);
+    if (!sel || !box) return;
+    const code = sel.value;
+    const info = TRAFFIC_SIGNS[code];
+    box.innerHTML = `${getSignSvg(code)}<div style="font-size:11px; line-height:1.25;"><b>${escapeHtml(code)}</b><br><span style="color:#555;">${escapeHtml(info ? info.name.replace(/^[^:]+:\s*/, '') : '')}</span></div>`;
 }
 
 const map = L.map('map').setView([50.2649, 19.0238], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-// Warstwa znaczników kilometrów
 const kmMarkersLayer = L.layerGroup().addTo(map);
 
 Object.keys(CONFIG_ROUTES).forEach(key => {
@@ -627,6 +770,7 @@ function saveToLocalStorage() {
             points: points.map(p => ({
                 id: p.id,
                 typ: p.typ,
+                znak: p.znak || "",
                 numer: p.numer,
                 sektor: p.sektor,
                 liczba_osob: p.liczba_osob,
@@ -683,6 +827,9 @@ function loadFromLocalStorage() {
             data.points.forEach(p => {
                 const currentType = normalizeType(p.typ);
                 if (!CONFIG_TYPES[currentType]) return;
+                const signCode = currentType === "Znak drogowy"
+                    ? (p.znak || extractSignFromNotes(p.uwagi) || DEFAULT_SIGN_CODE)
+                    : "";
                 createMarkerAndAdd(
                     p.id || generateUUID(),
                     currentType,
@@ -692,7 +839,8 @@ function loadFromLocalStorage() {
                     p.telefon || "",
                     p.uwagi || "",
                     p.lat,
-                    p.lng
+                    p.lng,
+                    signCode
                 );
             });
         }
@@ -708,6 +856,17 @@ function loadFromLocalStorage() {
         console.error("Błąd odczytu autozapisu:", e);
         return false;
     }
+}
+
+// Próbuje wykryć kod znaku z uwag przy imporcie starszych plików (np. "B-36 + T-24")
+function extractSignFromNotes(notes) {
+    if (!notes) return "";
+    const upper = String(notes).toUpperCase();
+    const codes = Object.keys(TRAFFIC_SIGNS).sort((a, b) => b.length - a.length);
+    for (const code of codes) {
+        if (upper.includes(code.toUpperCase())) return code;
+    }
+    return "";
 }
 
 function updateProjectTitle() {
@@ -795,13 +954,11 @@ function renderKmMarkers(skipSave = false) {
 
     let badgeCount = 0;
 
-    // 1. Znacznik START
     if (showEndpoints) {
         createKmBadgeMarker(coords[0][0], coords[0][1], `START ${key}`, "km-marker-endpoint", `Start trasy ${key} (0.00 km)`);
         badgeCount++;
     }
 
-    // 2. Znaczniki pośrednie co 1 km / 5 km
     if (intervalKm > 0) {
         const stepMeters = intervalKm * 1000;
         let accumulated = 0;
@@ -835,7 +992,6 @@ function renderKmMarkers(skipSave = false) {
         }
     }
 
-    // 3. Znacznik META
     if (showEndpoints) {
         const last = coords[coords.length - 1];
         const totalDistText = formatDistanceText(calculateRouteDistance(key));
@@ -982,7 +1138,6 @@ function loadGpxRoute(routeKey, inputElement) {
         document.getElementById("visRoute" + routeKey).checked = true;
         toggleRouteVisibility(routeKey, true, true);
 
-        // Automatycznie ustaw kilometraż na świeżo wgraną trasę
         document.getElementById("kmRouteSelect").value = routeKey;
         updateRouteLayer(routeKey);
         renderKmMarkers();
@@ -1002,7 +1157,7 @@ function exportGPX(routeKey) {
     }
 
     let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    gpxContent += `<gpx version="1.1" creator="System Zabezpieczenia Biegu v3.1" xmlns="http://www.topografix.com/GPX/1/1">\n`;
+    gpxContent += `<gpx version="1.1" creator="System Zabezpieczenia Biegu v3.2" xmlns="http://www.topografix.com/GPX/1/1">\n`;
     gpxContent += `  <trk>\n`;
     gpxContent += `    <name>Trasa ${routeKey} - ${escapeHtml(projectName)}</name>\n`;
     gpxContent += `    <trkseg>\n`;
@@ -1078,12 +1233,22 @@ function showAddPopup(latlng) {
     const isSign = currentMode === "Znak drogowy";
     const defaultPeople = isSign ? 0 : 1;
     const notesPlaceholder = isSign
-        ? "np. B-36 Zakaz zatrzymywania się (z tabliczką T-24)..."
+        ? "np. ustawić na wysokości wjazdu, z tabliczką od godz. 8:00..."
         : "Wpisz opis lokalizacji...";
 
+    const signSelectorHtml = isSign ? `
+        <label>Rodzaj znaku z bazy:</label>
+        <select id="newSignCode" class="popup-input" onchange="updateSignPreview('newSignCode', 'newSignPreview')">
+            ${buildSignOptionsHtml(DEFAULT_SIGN_CODE)}
+        </select>
+        <div id="newSignPreview" class="sign-preview-box"></div>
+    ` : "";
+
     const popupContent = `
-        <div class="popup-form" style="width:245px">
-            <b style="color:${CONFIG_TYPES[currentMode].color}; font-size:14px;">${badgeHtml(currentMode)}Dodaj: ${currentMode}</b><br>
+        <div class="popup-form" style="width:255px">
+            <b style="color:${CONFIG_TYPES[currentMode].color}; font-size:14px;">${badgeHtml(currentMode, isSign ? DEFAULT_SIGN_CODE : null)}Dodaj: ${currentMode}</b><br>
+
+            ${signSelectorHtml}
 
             <label>Numer identyfikacyjny:</label>
             <input id="newNumber" class="popup-input" value="${escapeHtml(autoNum)}">
@@ -1097,7 +1262,7 @@ function showAddPopup(latlng) {
             <label>Telefon kontaktowy:</label>
             <input id="newPhone" class="popup-input" placeholder="np. +48 500...">
 
-            <label>${isSign ? "Symbol / treść znaku i uwagi:" : "Uwagi / opis lokacji:"}</label>
+            <label>Uwagi / opis lokacji:</label>
             <textarea id="newNotes" class="popup-textarea" placeholder="${notesPlaceholder}"></textarea>
 
             <div class="popup-btn-container">
@@ -1108,6 +1273,7 @@ function showAddPopup(latlng) {
     `;
 
     L.popup().setLatLng(latlng).setContent(popupContent).openOn(map);
+    if (isSign) updateSignPreview("newSignCode", "newSignPreview");
 }
 
 function savePoint(lat, lng) {
@@ -1116,6 +1282,8 @@ function savePoint(lat, lng) {
     const liczba_osob = parseInt(document.getElementById("newPeople").value, 10) || 0;
     const telefon = document.getElementById("newPhone").value.trim();
     const uwagi = document.getElementById("newNotes").value.trim();
+    const signEl = document.getElementById("newSignCode");
+    const znak = (currentMode === "Znak drogowy" && signEl) ? signEl.value : "";
 
     if (!numer) {
         alert("Numer punktu nie może być pusty!");
@@ -1123,7 +1291,7 @@ function savePoint(lat, lng) {
     }
 
     const pointId = generateUUID();
-    createMarkerAndAdd(pointId, currentMode, numer, sector, liczba_osob, telefon, uwagi, lat, lng);
+    createMarkerAndAdd(pointId, currentMode, numer, sector, liczba_osob, telefon, uwagi, lat, lng, znak);
 
     map.closePopup();
     updateSectorDropdown();
@@ -1132,19 +1300,25 @@ function savePoint(lat, lng) {
     saveToLocalStorage();
 }
 
-function createMarkerAndAdd(id, typ, numer, sektor, liczba_osob, telefon, uwagi, lat, lng) {
+function buildDivIcon(typ, znak = "") {
     const cfg = CONFIG_TYPES[typ];
     const iconClassName = cfg ? cfg.className : "";
+    const isSign = typ === "Znak drogowy";
+    const size = isSign ? [28, 28] : [26, 26];
+    const anchor = isSign ? [14, 14] : [13, 13];
 
-    const customIcon = L.divIcon({
+    return L.divIcon({
         className: `custom-marker-icon ${iconClassName}`,
-        html: iconHtml(typ),
-        iconSize: [26, 26],
-        iconAnchor: [13, 13]
+        html: iconHtml(typ, znak),
+        iconSize: size,
+        iconAnchor: anchor
     });
+}
 
+function createMarkerAndAdd(id, typ, numer, sektor, liczba_osob, telefon, uwagi, lat, lng, znak = "") {
+    const effectiveSign = typ === "Znak drogowy" ? (znak || DEFAULT_SIGN_CODE) : "";
     const marker = L.marker([lat, lng], {
-        icon: customIcon,
+        icon: buildDivIcon(typ, effectiveSign),
         draggable: true
     });
 
@@ -1152,7 +1326,7 @@ function createMarkerAndAdd(id, typ, numer, sektor, liczba_osob, telefon, uwagi,
         marker.addTo(map);
     }
 
-    const point = { id, typ, numer, sektor, liczba_osob, telefon, uwagi, lat, lng, marker };
+    const point = { id, typ, znak: effectiveSign, numer, sektor, liczba_osob, telefon, uwagi, lat, lng, marker };
     points.push(point);
 
     marker.on('dragend', function(e) {
@@ -1170,9 +1344,24 @@ function createMarkerAndAdd(id, typ, numer, sektor, liczba_osob, telefon, uwagi,
 
 function updatePopupContent(point) {
     const cfg = CONFIG_TYPES[point.typ];
+    const isSign = point.typ === "Znak drogowy";
+
+    const signEditorHtml = isSign ? `
+        <label>Rodzaj znaku z bazy:</label>
+        <select id="sign_${point.id}" class="popup-input" onchange="updateSignPreview('sign_${point.id}', 'sign_prev_${point.id}')">
+            ${buildSignOptionsHtml(point.znak || DEFAULT_SIGN_CODE)}
+        </select>
+        <div id="sign_prev_${point.id}" class="sign-preview-box">
+            ${getSignSvg(point.znak || DEFAULT_SIGN_CODE)}
+            <div style="font-size:11px; line-height:1.25;"><b>${escapeHtml(point.znak || DEFAULT_SIGN_CODE)}</b><br><span style="color:#555;">${escapeHtml((TRAFFIC_SIGNS[point.znak || DEFAULT_SIGN_CODE]?.name || '').replace(/^[^:]+:\s*/, ''))}</span></div>
+        </div>
+    ` : "";
+
     point.marker.bindPopup(`
-        <div class="popup-form" style="width:240px">
-            <b style="color:${cfg.color}; font-size:14px;">${badgeHtml(point.typ)}Edycja: ${point.typ}</b><br>
+        <div class="popup-form" style="width:255px">
+            <b style="color:${cfg.color}; font-size:14px;">${badgeHtml(point.typ, point.znak)}Edycja: ${point.typ}</b><br>
+
+            ${signEditorHtml}
 
             <label>Numer identyfikacyjny:</label>
             <input id="nr_${point.id}" class="popup-input" value="${escapeHtml(point.numer)}">
@@ -1207,6 +1396,14 @@ function saveEdit(id) {
     if (!newNum) {
         alert("Numer punktu nie może być pusty!");
         return;
+    }
+
+    if (point.typ === "Znak drogowy") {
+        const signSel = document.getElementById("sign_" + id);
+        if (signSel) {
+            point.znak = signSel.value;
+            point.marker.setIcon(buildDivIcon(point.typ, point.znak));
+        }
     }
 
     point.numer = newNum;
@@ -1280,7 +1477,8 @@ function pointMatchesFilters(p, searchVal, selectedSector) {
     if (selectedSector !== "__ALL__" && selectedSector !== "__EMPTY__" && pSector !== selectedSector) return false;
 
     if (searchVal) {
-        const haystack = `${p.numer} ${p.typ} ${p.sektor} ${p.telefon} ${p.uwagi}`.toLowerCase();
+        const signName = p.znak && TRAFFIC_SIGNS[p.znak] ? TRAFFIC_SIGNS[p.znak].name : "";
+        const haystack = `${p.numer} ${p.typ} ${p.znak || ""} ${signName} ${p.sektor} ${p.telefon} ${p.uwagi}`.toLowerCase();
         if (!haystack.includes(searchVal)) return false;
     }
 
@@ -1301,20 +1499,25 @@ function applyFiltersAndRefresh() {
             if (!map.hasLayer(p.marker)) p.marker.addTo(map);
             visibleCount++;
 
+            const signBadge = (p.typ === "Znak drogowy" && p.znak)
+                ? `<span class="badge-sign-code">${escapeHtml(p.znak)}</span> `
+                : "";
+
             html += `
             <div class="pointItem" onclick="focusPoint('${p.id}')" style="border-left: 5px solid ${CONFIG_TYPES[p.typ].color};">
                 <div style="float:right">
                     <button class="action-btn btn-edit" onclick="event.stopPropagation(); focusPoint('${p.id}');"><i class="fa-solid fa-pen"></i></button>
                     <button class="action-btn btn-delete" onclick="event.stopPropagation(); deletePoint('${p.id}');"><i class="fa-solid fa-trash"></i></button>
                 </div>
-                <b>${badgeHtml(p.typ)}${escapeHtml(p.typ)}</b> - <span style="font-weight:bold; color:#111;">${escapeHtml(p.numer)}</span>
+                <b>${badgeHtml(p.typ, p.znak)}${escapeHtml(p.typ)}</b> - <span style="font-weight:bold; color:#111;">${escapeHtml(p.numer)}</span>
+                ${signBadge}
                 ${p.sektor ? `<span class="badge-sector">Sek: ${escapeHtml(p.sektor)}</span>` : ''}
                 <br>
                 <small style="display:block; margin:2px 0; color:#555;">
                     ${p.liczba_osob ? `Obsada: <b>${p.liczba_osob} os.</b>` : ''}
                     ${p.telefon ? ` | Tel: ${escapeHtml(p.telefon)}` : ''}
                 </small>
-                <small style="color:#666; font-style:italic;">${p.uwagi ? escapeHtml(p.uwagi) : 'Brak uwag.'}</small>
+                <small style="color:#666; font-style:italic;">${p.uwagi ? escapeHtml(p.uwagi) : (p.znak && TRAFFIC_SIGNS[p.znak] ? escapeHtml(TRAFFIC_SIGNS[p.znak].name) : 'Brak uwag.')}</small>
                 <div class="coords">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
             </div>
             `;
@@ -1334,7 +1537,7 @@ function focusPoint(id) {
     point.marker.openPopup();
 }
 
-/* ---------- STATYSTYKI LIVE (WG TYPU + WG SEKTORA) ---------- */
+/* ---------- STATYSTYKI LIVE (WG TYPU + WG SEKTORA + ZESTAWIENIE ZNAKÓW) ---------- */
 function updateStats() {
     let htmlType = "";
     let grandTotalPoints = 0;
@@ -1404,6 +1607,37 @@ function updateStats() {
         });
     }
     document.getElementById("sectorStatTableBody").innerHTML = htmlSector;
+
+    // Zestawienie znaków drogowych (magazynowe)
+    const signPoints = points.filter(p => p.typ === "Znak drogowy");
+    let htmlSigns = "";
+    if (signPoints.length === 0) {
+        htmlSigns = `<tr><td colspan="3" style="text-align:center; color:#999;">Brak ustawionych znaków</td></tr>`;
+    } else {
+        const signCounts = {};
+        signPoints.forEach(p => {
+            const code = p.znak || DEFAULT_SIGN_CODE;
+            signCounts[code] = (signCounts[code] || 0) + 1;
+        });
+
+        Object.keys(signCounts).sort((a, b) => a.localeCompare(b, 'pl')).forEach(code => {
+            const shortDesc = (TRAFFIC_SIGNS[code]?.name || "").replace(/^[^:]+:\s*/, "");
+            htmlSigns += `
+                <tr>
+                    <td style="white-space:nowrap;">${badgeHtml("Znak drogowy", code)}<b>${escapeHtml(code)}</b></td>
+                    <td style="font-size:11px;">${escapeHtml(shortDesc)}</td>
+                    <td><b>${signCounts[code]}</b></td>
+                </tr>
+            `;
+        });
+        htmlSigns += `
+            <tr style="background:#e9ecef; font-weight:bold; border-top:2px solid #ccc;">
+                <td colspan="2">RAZEM ZNAKÓW</td>
+                <td>${signPoints.length}</td>
+            </tr>
+        `;
+    }
+    document.getElementById("signStatTableBody").innerHTML = htmlSigns;
 }
 
 function clearProject() {
@@ -1438,13 +1672,14 @@ function clearProject() {
 
 function exportJSON() {
     const exportData = {
-        version: "3.1",
+        version: "3.2",
         projectName: projectName,
         generatedAt: new Date().toISOString(),
         routeVisibility: routeVisibility,
         drawnRoutes: routeLatLngs,
         points: points.map(p => ({
             typ: p.typ,
+            znak: p.znak || "",
             numer: p.numer,
             sektor: p.sektor,
             liczba_osob: p.liczba_osob,
@@ -1502,6 +1737,10 @@ function importJSON(event) {
                 const currentType = normalizeType(p.typ);
                 if (!CONFIG_TYPES[currentType]) return;
 
+                const signCode = currentType === "Znak drogowy"
+                    ? (p.znak || extractSignFromNotes(p.uwagi) || DEFAULT_SIGN_CODE)
+                    : "";
+
                 const id = generateUUID();
                 createMarkerAndAdd(
                     id,
@@ -1512,7 +1751,8 @@ function importJSON(event) {
                     p.telefon || "",
                     p.uwagi || "",
                     p.lat,
-                    p.lng
+                    p.lng,
+                    signCode
                 );
             });
 
@@ -1529,7 +1769,7 @@ function importJSON(event) {
             } else {
                 fitMapToAllRoutes();
             }
-            alert("Projekt JSON został zaimportowany pomyślnie (wraz z trasami)!");
+            alert("Projekt JSON został zaimportowany pomyślnie (wraz z trasami i znakami)!");
         } catch (err) {
             alert("Błąd podczas odczytu pliku JSON.");
             console.error(err);
@@ -1548,6 +1788,7 @@ function exportExcel() {
     const rows = points.map((p, idx) => ({
         "Lp.": idx + 1,
         "Typ punktu": p.typ,
+        "Symbol znaku": p.znak || "",
         "Numer identyfikacyjny": p.numer,
         "Sektor / Odcinek": p.sektor,
         "Obsada (Liczba osób)": p.liczba_osob,
@@ -1562,7 +1803,7 @@ function exportExcel() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Zabezpieczenie trasy");
 
     worksheet["!cols"] = [
-        { wch: 5 },  { wch: 24 }, { wch: 15 }, { wch: 15 },
+        { wch: 5 },  { wch: 24 }, { wch: 16 }, { wch: 15 }, { wch: 15 },
         { wch: 10 }, { wch: 15 }, { wch: 45 }, { wch: 12 }, { wch: 12 }
     ];
 
@@ -1600,12 +1841,16 @@ function importExcel(event) {
                 const liczba_osob = parseInt(row["Obsada (Liczba osób)"], 10) || 0;
                 const telefon = row["Telefon kontaktowy"] ? String(row["Telefon kontaktowy"]) : "";
                 const uwagi = row["Uwagi i opis lokalizacji"] ? String(row["Uwagi i opis lokalizacji"]) : "";
+                const rawSign = row["Symbol znaku"] ? String(row["Symbol znaku"]).trim() : "";
                 const lat = parseFloat(row["Szerokość geogr. (Lat)"]);
                 const lng = parseFloat(row["Długość geogr. (Lng)"]);
 
                 if (typ && CONFIG_TYPES[typ] && !isNaN(lat) && !isNaN(lng)) {
+                    const signCode = typ === "Znak drogowy"
+                        ? (rawSign || extractSignFromNotes(uwagi) || DEFAULT_SIGN_CODE)
+                        : "";
                     const id = generateUUID();
-                    createMarkerAndAdd(id, typ, numer, sektor, liczba_osob, telefon, uwagi, lat, lng);
+                    createMarkerAndAdd(id, typ, numer, sektor, liczba_osob, telefon, uwagi, lat, lng, signCode);
                     importedCount++;
                 }
             });
