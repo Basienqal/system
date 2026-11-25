@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<title>System Zabezpieczenia Tras i Biegów Masowych v3.0</title>
+<title>System Zabezpieczenia Tras i Biegów Masowych v3.1</title>
 
 <!-- Stylowanie Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -20,7 +20,7 @@ body {
     position: absolute;
     left: 0;
     top: 0;
-    width: 350px;
+    width: 355px;
     bottom: 0;
     background: white;
     overflow-y: auto;
@@ -33,7 +33,7 @@ body {
 
 #map {
     position: absolute;
-    left: 350px;
+    left: 355px;
     right: 0;
     top: 0;
     bottom: 0;
@@ -137,14 +137,19 @@ body {
     border-radius: 10px;
     font-size: 10px;
     font-weight: bold;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.55);
     white-space: nowrap;
-    padding: 0 4px;
+    padding: 0 5px;
 }
 .km-marker-major {
     background: #dc3545;
     font-size: 11px;
-    z-index: 600 !important;
+    z-index: 650 !important;
+}
+.km-marker-endpoint {
+    background: #198754;
+    font-size: 10px;
+    z-index: 700 !important;
 }
 
 /* Mała odznaka typu w panelu i popupach */
@@ -171,6 +176,7 @@ body {
 .icon-zywieniowy   { border: 2px solid #0d6efd !important; }
 .icon-sedzia       { background: #e0a800; }
 .icon-sluza        { border: 2px solid #20c997 !important; }
+.icon-znak-drogowy { background: #fff3cd; border: 2px solid #d97706 !important; }
 
 .btn-ctrl {
     width: 100%;
@@ -321,7 +327,7 @@ body {
 <body>
 
 <div id="panel">
-    <h2 style="margin-top:0; margin-bottom:6px; font-size:19px; color:#333;">Zabezpieczenie Biegu <small style="font-size:11px; color:#888;">v3.0</small></h2>
+    <h2 style="margin-top:0; margin-bottom:6px; font-size:19px; color:#333;">Zabezpieczenie Biegu <small style="font-size:11px; color:#888;">v3.1</small></h2>
 
     <div class="autosave-badge" id="autosaveStatus">
         <span><i class="fa-solid fa-floppy-disk"></i> Autozapis aktywny</span>
@@ -418,7 +424,7 @@ body {
 
         <!-- ZNACZNIKI KILOMETRÓW -->
         <label style="font-size:12px; font-weight:bold; color:#333;"><i class="fa-solid fa-flag-checkered"></i> Znaczniki kilometrażu trasy:</label>
-        <div style="margin-top:4px; display:flex; gap:4px; margin-bottom:8px;">
+        <div style="margin-top:4px; display:flex; gap:4px; margin-bottom:4px;">
             <select id="kmRouteSelect" class="popup-input" style="margin-bottom:0; flex:1;" onchange="renderKmMarkers()">
                 <option value="5K">Trasa 5K</option>
                 <option value="10K">Trasa 10K</option>
@@ -428,9 +434,15 @@ body {
             </select>
             <select id="kmIntervalSelect" class="popup-input" style="margin-bottom:0; flex:1;" onchange="renderKmMarkers()">
                 <option value="0">Wyłączone</option>
-                <option value="1">Co 1 km</option>
+                <option value="1" selected>Co 1 km</option>
                 <option value="5">Co 5 km</option>
             </select>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; color:#555; margin-bottom:6px;">
+            <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                <input type="checkbox" id="kmEndpointsChk" checked onchange="renderKmMarkers()"> Pokaż START i METĘ
+            </label>
+            <span id="kmCountInfo" style="font-weight:bold; color:#333;">0 znaczników</span>
         </div>
 
         <hr style="border:0; border-top:1px solid #ddd; margin:8px 0;">
@@ -450,7 +462,7 @@ body {
         <div id="drawInfoBox" style="display:none; margin-top:6px; font-size:11px; color:#555; background:#e9ecef; padding:6px; border-radius:3px;">
             <i class="fa-solid fa-circle-info"></i> Klikaj na mapie, aby stawiać kolejne punkty trasy.<br>
 
-            <!-- LICZNIK ODLEGLOŚCI -->
+            <!-- LICZNIK ODLEGŁOŚCI -->
             <div id="drawDistanceText" style="margin-top:6px; font-size:12px; font-weight:bold; color:#007bff; background:#fff; padding:4px 6px; border-radius:3px; border:1px solid #ced4da;">
                 <i class="fa-solid fa-ruler-horizontal"></i> Długość trasy: 0 m
             </div>
@@ -472,10 +484,10 @@ body {
     </div>
 
     <div class="section-title">Filtrowanie warstw</div>
-    <div id="filterContainer" style="max-height: 150px; overflow-y: auto; background:#f8f9fa; padding:5px; border-radius:4px; border:1px solid #ddd;"></div>
+    <div id="filterContainer" style="max-height: 170px; overflow-y: auto; background:#f8f9fa; padding:5px; border-radius:4px; border:1px solid #ddd;"></div>
 
     <div class="section-title">Wyszukiwarka i Filtr Sektora</div>
-    <input type="text" id="searchPointInput" class="search-box" placeholder="Szukaj (numer, sektor, tel, uwagi)..." oninput="applyFiltersAndRefresh()">
+    <input type="text" id="searchPointInput" class="search-box" placeholder="Szukaj (numer, znak, sektor, tel, uwagi)..." oninput="applyFiltersAndRefresh()">
     <select id="sectorFilterSelect" class="search-box" onchange="applyFiltersAndRefresh()">
         <option value="__ALL__">Wszystkie sektory</option>
     </select>
@@ -521,6 +533,7 @@ const SVG_BADIERKI = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24
 const SVG_TOALETA = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><text x='12' y='16.5' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-weight='bold' font-size='11.5' fill='#ffffff'>WC</text></svg>`;
 const SVG_ZYWIENIOWY = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='#0d6efd'><path d='M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z'/></svg>`;
 const SVG_SEDZIA = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='#ffffff'><path d='M12 2c1.1 0 2 .9 2 2v1.17c3.41.44 6 3.32 6 6.83 0 3.87-3.13 7-7 7s-7-3.13-7-7c0-3.51 2.59-6.39 6-6.83V4c0-1.1.9-2 2-2zm0 16c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-1-8h2v3h-2v-3zm0 4h2v2h-2v-2z'/></svg>`;
+const SVG_ZNAK_DROGOWY = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><polygon points='12,3 22,20 2,20' fill='#ffc107' stroke='#dc3545' stroke-width='2.2' stroke-linejoin='round'/><line x1='12' y1='9' x2='12' y2='14.5' stroke='#111111' stroke-width='2' stroke-linecap='round'/><circle cx='12' cy='17.2' r='1.2' fill='#111111'/></svg>`;
 
 const CONFIG_TYPES = {
     "Służba informacyjna":      { prefix: "INF",  className: "icon-wolontariusz", svgContent: SVG_INFORMACYJNA_BLACK, color: "#007bff" },
@@ -532,7 +545,8 @@ const CONFIG_TYPES = {
     "Toaleta":                  { prefix: "TOAL", className: "icon-toaleta",      svgContent: SVG_TOALETA,            color: "#6f42c1" },
     "Punkt żywieniowy":         { prefix: "ZYW",  className: "icon-zywieniowy",   svgContent: SVG_ZYWIENIOWY,         color: "#0d6efd" },
     "Sędzia":                   { prefix: "SED",  className: "icon-sedzia",       svgContent: SVG_SEDZIA,             color: "#e0a800" },
-    "Śluza":                    { prefix: "SLU",  className: "icon-sluza",        svgContent: SVG_SLUZA,              color: "#20c997" }
+    "Śluza":                    { prefix: "SLU",  className: "icon-sluza",        svgContent: SVG_SLUZA,              color: "#20c997" },
+    "Znak drogowy":             { prefix: "ZNAK", className: "icon-znak-drogowy", svgContent: SVG_ZNAK_DROGOWY,       color: "#d97706" }
 };
 
 const CONFIG_ROUTES = {
@@ -549,6 +563,7 @@ function normalizeType(typ) {
     if (typ === "Kierowanie ruchem" || typ === "Policja") return "Służba kierowania ruchem";
     if (typ === "Płoty") return "Barierki";
     if (typ === "Lider" || typ === "Koordynator" || typ === "Punkt kibicowania") return "Taśma";
+    if (typ === "Znak" || typ === "Znaki") return "Znak drogowy";
     return typ;
 }
 
@@ -578,7 +593,6 @@ let projectName = "Silesia Marathon 2026";
 let activeFilters = {};
 let routeVisibility = { "5K": true, "10K": true, "SM": true, "HM": true, "UM": true };
 
-// Jednolita tablica współrzędnych dla każdej trasy (obsługuje zarówno GPX, jak i ręczne rysowanie)
 let isDrawingRoute = false;
 let routeLatLngs = { "5K": [], "10K": [], "SM": [], "HM": [], "UM": [] };
 
@@ -609,6 +623,7 @@ function saveToLocalStorage() {
             drawnRoutes: routeLatLngs,
             kmRoute: document.getElementById("kmRouteSelect").value,
             kmInterval: document.getElementById("kmIntervalSelect").value,
+            kmEndpoints: document.getElementById("kmEndpointsChk").checked,
             points: points.map(p => ({
                 id: p.id,
                 typ: p.typ,
@@ -661,7 +676,8 @@ function loadFromLocalStorage() {
         }
 
         if (data.kmRoute) document.getElementById("kmRouteSelect").value = data.kmRoute;
-        if (data.kmInterval) document.getElementById("kmIntervalSelect").value = data.kmInterval;
+        if (data.kmInterval !== undefined) document.getElementById("kmIntervalSelect").value = data.kmInterval;
+        if (data.kmEndpoints !== undefined) document.getElementById("kmEndpointsChk").checked = data.kmEndpoints;
 
         if (Array.isArray(data.points)) {
             data.points.forEach(p => {
@@ -747,49 +763,87 @@ function toggleRouteVisibility(key, isVisible, skipSave = false) {
     if (!skipSave) saveToLocalStorage();
 }
 
+function createKmBadgeMarker(lat, lng, label, extraClass = "", tooltipText = "") {
+    const width = Math.max(42, label.length * 6 + 14);
+    const kmIcon = L.divIcon({
+        className: `km-marker-badge ${extraClass}`,
+        html: escapeHtml(label),
+        iconSize: [width, 19],
+        iconAnchor: [width / 2, 9.5]
+    });
+
+    const marker = L.marker([lat, lng], { icon: kmIcon, interactive: true });
+    if (tooltipText) {
+        marker.bindTooltip(tooltipText, { direction: "top", offset: [0, -8] });
+    }
+    marker.addTo(kmMarkersLayer);
+}
+
 function renderKmMarkers(skipSave = false) {
     kmMarkersLayer.clearLayers();
     const key = document.getElementById("kmRouteSelect").value;
     const intervalKm = parseInt(document.getElementById("kmIntervalSelect").value, 10);
+    const showEndpoints = document.getElementById("kmEndpointsChk").checked;
+    const countEl = document.getElementById("kmCountInfo");
 
-    if (!intervalKm || !routeLatLngs[key] || routeLatLngs[key].length < 2) {
+    const coords = routeLatLngs[key];
+    if (!coords || coords.length < 2) {
+        if (countEl) countEl.innerText = "0 znaczników";
         if (!skipSave) saveToLocalStorage();
         return;
     }
 
-    const coords = routeLatLngs[key];
-    const stepMeters = intervalKm * 1000;
-    let accumulated = 0;
-    let nextTarget = stepMeters;
-    let kmIndex = intervalKm;
+    let badgeCount = 0;
 
-    for (let i = 1; i < coords.length; i++) {
-        const p1 = L.latLng(coords[i - 1][0], coords[i - 1][1]);
-        const p2 = L.latLng(coords[i][0], coords[i][1]);
-        const segLen = p1.distanceTo(p2);
-
-        while (accumulated + segLen >= nextTarget && segLen > 0) {
-            const ratio = (nextTarget - accumulated) / segLen;
-            const lat = p1.lat + (p2.lat - p1.lat) * ratio;
-            const lng = p1.lng + (p2.lng - p1.lng) * ratio;
-
-            const isMajor = (kmIndex % 5 === 0);
-            const kmIcon = L.divIcon({
-                className: `km-marker-badge ${isMajor ? 'km-marker-major' : ''}`,
-                html: `${kmIndex} km`,
-                iconSize: [38, 18],
-                iconAnchor: [19, 9]
-            });
-
-            L.marker([lat, lng], { icon: kmIcon, interactive: false })
-                .addTo(kmMarkersLayer);
-
-            nextTarget += stepMeters;
-            kmIndex += intervalKm;
-        }
-        accumulated += segLen;
+    // 1. Znacznik START
+    if (showEndpoints) {
+        createKmBadgeMarker(coords[0][0], coords[0][1], `START ${key}`, "km-marker-endpoint", `Start trasy ${key} (0.00 km)`);
+        badgeCount++;
     }
 
+    // 2. Znaczniki pośrednie co 1 km / 5 km
+    if (intervalKm > 0) {
+        const stepMeters = intervalKm * 1000;
+        let accumulated = 0;
+        let nextTarget = stepMeters;
+        let kmIndex = intervalKm;
+
+        for (let i = 1; i < coords.length; i++) {
+            const p1 = L.latLng(coords[i - 1][0], coords[i - 1][1]);
+            const p2 = L.latLng(coords[i][0], coords[i][1]);
+            const segLen = p1.distanceTo(p2);
+
+            while (accumulated + segLen >= nextTarget && segLen > 0) {
+                const ratio = (nextTarget - accumulated) / segLen;
+                const lat = p1.lat + (p2.lat - p1.lat) * ratio;
+                const lng = p1.lng + (p2.lng - p1.lng) * ratio;
+
+                const isMajor = (kmIndex % 5 === 0);
+                createKmBadgeMarker(
+                    lat,
+                    lng,
+                    `${kmIndex} km`,
+                    isMajor ? "km-marker-major" : "",
+                    `Trasa ${key}: ${kmIndex}. kilometr`
+                );
+                badgeCount++;
+
+                nextTarget += stepMeters;
+                kmIndex += intervalKm;
+            }
+            accumulated += segLen;
+        }
+    }
+
+    // 3. Znacznik META
+    if (showEndpoints) {
+        const last = coords[coords.length - 1];
+        const totalDistText = formatDistanceText(calculateRouteDistance(key));
+        createKmBadgeMarker(last[0], last[1], `META (${totalDistText})`, "km-marker-endpoint", `Meta trasy ${key} (${totalDistText})`);
+        badgeCount++;
+    }
+
+    if (countEl) countEl.innerText = `${badgeCount} znaczników`;
     if (!skipSave) saveToLocalStorage();
 }
 
@@ -899,7 +953,7 @@ function clearActiveRoute() {
     }
 }
 
-/* ---------- IMPORT GPX (zapisuje ślad do routeLatLngs -> pełny eksport JSON/localStorage) ---------- */
+/* ---------- IMPORT GPX ---------- */
 function loadGpxRoute(routeKey, inputElement) {
     const file = inputElement.files[0];
     if (!file) return;
@@ -927,7 +981,11 @@ function loadGpxRoute(routeKey, inputElement) {
         routeLatLngs[routeKey] = extractedCoords;
         document.getElementById("visRoute" + routeKey).checked = true;
         toggleRouteVisibility(routeKey, true, true);
+
+        // Automatycznie ustaw kilometraż na świeżo wgraną trasę
+        document.getElementById("kmRouteSelect").value = routeKey;
         updateRouteLayer(routeKey);
+        renderKmMarkers();
 
         fitMapToAllRoutes();
     };
@@ -944,7 +1002,7 @@ function exportGPX(routeKey) {
     }
 
     let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    gpxContent += `<gpx version="1.1" creator="System Zabezpieczenia Biegu v3.0" xmlns="http://www.topografix.com/GPX/1/1">\n`;
+    gpxContent += `<gpx version="1.1" creator="System Zabezpieczenia Biegu v3.1" xmlns="http://www.topografix.com/GPX/1/1">\n`;
     gpxContent += `  <trk>\n`;
     gpxContent += `    <name>Trasa ${routeKey} - ${escapeHtml(projectName)}</name>\n`;
     gpxContent += `    <trkseg>\n`;
@@ -1017,8 +1075,14 @@ map.on("click", function(e) {
 
 function showAddPopup(latlng) {
     const autoNum = generateNextNumber(currentMode);
+    const isSign = currentMode === "Znak drogowy";
+    const defaultPeople = isSign ? 0 : 1;
+    const notesPlaceholder = isSign
+        ? "np. B-36 Zakaz zatrzymywania się (z tabliczką T-24)..."
+        : "Wpisz opis lokalizacji...";
+
     const popupContent = `
-        <div class="popup-form" style="width:240px">
+        <div class="popup-form" style="width:245px">
             <b style="color:${CONFIG_TYPES[currentMode].color}; font-size:14px;">${badgeHtml(currentMode)}Dodaj: ${currentMode}</b><br>
 
             <label>Numer identyfikacyjny:</label>
@@ -1028,13 +1092,13 @@ function showAddPopup(latlng) {
             <input id="newSector" class="popup-input" placeholder="np. A, Trasa, Rondo">
 
             <label>Liczba osób:</label>
-            <input type="number" id="newPeople" class="popup-input" value="1" min="0">
+            <input type="number" id="newPeople" class="popup-input" value="${defaultPeople}" min="0">
 
             <label>Telefon kontaktowy:</label>
             <input id="newPhone" class="popup-input" placeholder="np. +48 500...">
 
-            <label>Uwagi / opis lokacji:</label>
-            <textarea id="newNotes" class="popup-textarea" placeholder="Wpisz opis lokalizacji..."></textarea>
+            <label>${isSign ? "Symbol / treść znaku i uwagi:" : "Uwagi / opis lokacji:"}</label>
+            <textarea id="newNotes" class="popup-textarea" placeholder="${notesPlaceholder}"></textarea>
 
             <div class="popup-btn-container">
                 <button class="popup-btn btn-main" onclick="savePoint(${latlng.lat}, ${latlng.lng})">Zapisz</button>
@@ -1359,7 +1423,7 @@ function clearProject() {
     });
 
     kmMarkersLayer.clearLayers();
-    document.getElementById("kmIntervalSelect").value = "0";
+    document.getElementById("kmCountInfo").innerText = "0 znaczników";
     document.getElementById("searchPointInput").value = "";
     if (isDrawingRoute) toggleDrawRouteMode();
 
@@ -1374,7 +1438,7 @@ function clearProject() {
 
 function exportJSON() {
     const exportData = {
-        version: "3.0",
+        version: "3.1",
         projectName: projectName,
         generatedAt: new Date().toISOString(),
         routeVisibility: routeVisibility,
@@ -1574,6 +1638,7 @@ updateSectorDropdown();
 applyFiltersAndRefresh();
 updateStats();
 updateRouteDistanceUI();
+renderKmMarkers(true);
 
 if (restored) {
     if (points.length > 0) {
