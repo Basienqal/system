@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<title>System Zabezpieczenia Tras i Biegów Masowych v3.2</title>
+<title>System Zabezpieczenia Tras i Biegów Masowych v3.4</title>
 
 <!-- Stylowanie Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -376,7 +376,7 @@ body {
 <body>
 
 <div id="panel">
-    <h2 style="margin-top:0; margin-bottom:6px; font-size:19px; color:#333;">Zabezpieczenie Biegu <small style="font-size:11px; color:#888;">v3.2</small></h2>
+    <h2 style="margin-top:0; margin-bottom:6px; font-size:19px; color:#333;">Zabezpieczenie Biegu <small style="font-size:11px; color:#888;">v3.4</small></h2>
 
     <div class="autosave-badge" id="autosaveStatus">
         <span><i class="fa-solid fa-floppy-disk"></i> Autozapis aktywny</span>
@@ -535,7 +535,7 @@ body {
     <div id="filterContainer" style="max-height: 170px; overflow-y: auto; background:#f8f9fa; padding:5px; border-radius:4px; border:1px solid #ddd;"></div>
 
     <div class="section-title">Wyszukiwarka i Filtr Sektora</div>
-    <input type="text" id="searchPointInput" class="search-box" placeholder="Szukaj (numer, B-36, sektor, tel, uwagi)..." oninput="applyFiltersAndRefresh()">
+    <input type="text" id="searchPointInput" class="search-box" placeholder="Szukaj (numer, A-30, B-36, C-2, sektor, uwagi)..." oninput="applyFiltersAndRefresh()">
     <select id="sectorFilterSelect" class="search-box" onchange="applyFiltersAndRefresh()">
         <option value="__ALL__">Wszystkie sektory</option>
     </select>
@@ -589,63 +589,156 @@ const SVG_BADIERKI = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24
 const SVG_TOALETA = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><text x='12' y='16.5' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-weight='bold' font-size='11.5' fill='#ffffff'>WC</text></svg>`;
 const SVG_ZYWIENIOWY = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='#0d6efd'><path d='M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z'/></svg>`;
 const SVG_SEDZIA = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='#ffffff'><path d='M12 2c1.1 0 2 .9 2 2v1.17c3.41.44 6 3.32 6 6.83 0 3.87-3.13 7-7 7s-7-3.13-7-7c0-3.51 2.59-6.39 6-6.83V4c0-1.1.9-2 2-2zm0 16c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-1-8h2v3h-2v-3zm0 4h2v2h-2v-2z'/></svg>`;
-const SVG_ZNAK_DEFAULT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><polygon points='12,2.5 22.5,20.5 1.5,20.5' fill='#ffdd00' stroke='#d32f2f' stroke-width='2.4' stroke-linejoin='round'/><line x1='12' y1='8.5' x2='12' y2='14.5' stroke='#111' stroke-width='2.2' stroke-linecap='round'/><circle cx='12' cy='17.5' r='1.3' fill='#111'/></svg>`;
+const SVG_ZNAK_DEFAULT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='16' height='16'><polygon points='16,2.5 29.5,27 2.5,27' fill='#ffdd00' stroke='#d32f2f' stroke-width='3.2' stroke-linejoin='round'/><line x1='16' y1='10.5' x2='16' y2='19' stroke='#111' stroke-width='2.8' stroke-linecap='round'/><circle cx='16' cy='23' r='1.7' fill='#111'/></svg>`;
 
-// ---------- BAZA ZNAKÓW DROGOWYCH Z DEDYKOWANYMI GRAFIKAMI SVG ----------
+// ---------- POMOCNICY GENEROWANIA SVG ZNAKÓW A, B i C ----------
+function svgATriangle(inner) {
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><polygon points='16,2.5 29.5,27 2.5,27' fill='#ffdd00' stroke='#d32f2f' stroke-width='3.2' stroke-linejoin='round'/>${inner}</svg>`;
+}
+function svgBWhite(inner) {
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.5'/>${inner}</svg>`;
+}
+function svgBWhiteSlash(inner) {
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.5'/>${inner}<line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='2.6'/></svg>`;
+}
+function svgBEnd(inner) {
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#666666' stroke-width='2'/>${inner}<g stroke='#444444' stroke-width='1.1'><line x1='7' y1='25' x2='25' y2='7'/><line x1='5.8' y1='23.5' x2='23.5' y2='5.8'/><line x1='8.5' y1='26.2' x2='26.2' y2='8.5'/></g></svg>`;
+}
+function svgCBlue(inner) {
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/>${inner}</svg>`;
+}
+function svgCEnd(inner) {
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/>${inner}<line x1='6' y1='26' x2='26' y2='6' stroke='#d32f2f' stroke-width='3.2'/></svg>`;
+}
+
+// ---------- PEŁNA BAZA ZNAKÓW DROGOWYCH: GRUPA A (OSTRZEGAWCZE), GRUPA B (ZAKAZU), GRUPA C (NAKAZU) + SPECJALNE ----------
 const TRAFFIC_SIGNS = {
-    "B-1": {
-        name: "B-1: Zakaz ruchu w obu kierunkach",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.8'/></svg>`
-    },
-    "B-2": {
-        name: "B-2: Zakaz wjazdu",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#d32f2f' stroke='#ffffff' stroke-width='1.2'/><rect x='6' y='13.2' width='20' height='5.6' rx='0.8' fill='#ffffff'/></svg>`
-    },
-    "B-21": {
-        name: "B-21: Zakaz skręcania w lewo",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.5'/><path d='M19 23 V14 Q19 11 16 11 H11' fill='none' stroke='#111' stroke-width='2.4' stroke-linecap='round'/><polygon points='8,11 12.5,8 12.5,14' fill='#111'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='2.8'/></svg>`
-    },
-    "B-22": {
-        name: "B-22: Zakaz skręcania w prawo",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#ffffff' stroke='#d32f2f' stroke-width='3.5'/><path d='M13 23 V14 Q13 11 16 11 H21' fill='none' stroke='#111' stroke-width='2.4' stroke-linecap='round'/><polygon points='24,11 19.5,8 19.5,14' fill='#111'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='2.8'/></svg>`
-    },
-    "B-35": {
-        name: "B-35: Zakaz postoju",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.8'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.4'/></svg>`
-    },
-    "B-36": {
-        name: "B-36: Zakaz zatrzymywania się",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.8'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.2'/><line x1='25' y1='7' x2='7' y2='25' stroke='#d32f2f' stroke-width='3.2'/></svg>`
-    },
-    "B-36 + T-24": {
-        name: "B-36 + T-24: Zakaz zatrzymywania się (odholowanie)",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 36'><circle cx='16' cy='12.5' r='11' fill='#1565c0' stroke='#d32f2f' stroke-width='3'/><line x1='9' y1='5.5' x2='23' y2='19.5' stroke='#d32f2f' stroke-width='2.6'/><line x1='23' y1='5.5' x2='9' y2='19.5' stroke='#d32f2f' stroke-width='2.6'/><rect x='5' y='25.5' width='22' height='9' rx='1' fill='#ffffff' stroke='#111' stroke-width='1.1'/><text x='16' y='32' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='6.5' fill='#111'>T-24</text></svg>`
-    },
-    "C-2": {
-        name: "C-2: Nakaz jazdy w prawo za znakiem",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><path d='M12 24 V15 Q12 12 15 12 H21' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='25,12 19.5,8.2 19.5,15.8' fill='#ffffff'/></svg>`
-    },
-    "C-4": {
-        name: "C-4: Nakaz jazdy w lewo za znakiem",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><path d='M20 24 V15 Q20 12 17 12 H11' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='7,12 12.5,8.2 12.5,15.8' fill='#ffffff'/></svg>`
-    },
-    "C-5": {
-        name: "C-5: Nakaz jazdy prosto",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><line x1='16' y1='24' x2='16' y2='11' stroke='#ffffff' stroke-width='3' stroke-linecap='round'/><polygon points='16,6.5 11.5,13 20.5,13' fill='#ffffff'/></svg>`
-    },
-    "C-9": {
-        name: "C-9: Nakaz jazdy z prawej strony znaku",
-        svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#1565c0' stroke='#ffffff' stroke-width='1.3'/><line x1='10' y1='9' x2='21' y2='20' stroke='#ffffff' stroke-width='3' stroke-linecap='round'/><polygon points='23.5,22.5 16.5,21.5 22.5,15.5' fill='#ffffff'/></svg>`
-    },
-    "A-30": {
-        name: "A-30: Inne niebezpieczeństwo",
-        svg: SVG_ZNAK_DEFAULT
-    },
+    // --- GRUPA A: ZNAKI OSTRZEGAWCZE ---
+    "A-1":  { group: "A", name: "A-1: Niebezpieczny zakręt w prawo", svg: svgATriangle(`<path d='M13.5 24 V17 Q13.5 14 16.5 14 H19.5' fill='none' stroke='#111' stroke-width='2.3' stroke-linecap='round'/><polygon points='22,14 18,11.5 18,16.5' fill='#111'/>`) },
+    "A-2":  { group: "A", name: "A-2: Niebezpieczny zakręt w lewo", svg: svgATriangle(`<path d='M18.5 24 V17 Q18.5 14 15.5 14 H12.5' fill='none' stroke='#111' stroke-width='2.3' stroke-linecap='round'/><polygon points='10,14 14,11.5 14,16.5' fill='#111'/>`) },
+    "A-3":  { group: "A", name: "A-3: Niebezpieczne zakręty – pierwszy w prawo", svg: svgATriangle(`<path d='M14 24 V20 L18.5 16.5 L14 13 V10' fill='none' stroke='#111' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/><polygon points='14,8.5 11.8,11.5 16.2,11.5' fill='#111'/>`) },
+    "A-4":  { group: "A", name: "A-4: Niebezpieczne zakręty – pierwszy w lewo", svg: svgATriangle(`<path d='M18 24 V20 L13.5 16.5 L18 13 V10' fill='none' stroke='#111' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/><polygon points='18,8.5 15.8,11.5 20.2,11.5' fill='#111'/>`) },
+    "A-5":  { group: "A", name: "A-5: Skrzyżowanie dróg", svg: svgATriangle(`<line x1='16' y1='11.5' x2='16' y2='24' stroke='#111' stroke-width='2.3'/><line x1='11' y1='18' x2='21' y2='18' stroke='#111' stroke-width='2.3'/>`) },
+    "A-6a": { group: "A", name: "A-6a: Skrzyżowanie z drogą podporządkowaną występującą po obu stronach", svg: svgATriangle(`<line x1='16' y1='10.5' x2='16' y2='24.5' stroke='#111' stroke-width='2.6'/><line x1='11' y1='18.5' x2='21' y2='18.5' stroke='#111' stroke-width='1.6'/>`) },
+    "A-6b": { group: "A", name: "A-6b: Skrzyżowanie z drogą podporządkowaną występującą po prawej stronie", svg: svgATriangle(`<line x1='15' y1='10.5' x2='15' y2='24.5' stroke='#111' stroke-width='2.6'/><line x1='15' y1='18.5' x2='21.5' y2='18.5' stroke='#111' stroke-width='1.7'/>`) },
+    "A-6c": { group: "A", name: "A-6c: Skrzyżowanie z drogą podporządkowaną występującą po lewej stronie", svg: svgATriangle(`<line x1='17' y1='10.5' x2='17' y2='24.5' stroke='#111' stroke-width='2.6'/><line x1='10.5' y1='18.5' x2='17' y2='18.5' stroke='#111' stroke-width='1.7'/>`) },
+    "A-6d": { group: "A", name: "A-6d: Wlot drogi jednokierunkowej z prawej strony", svg: svgATriangle(`<line x1='14.5' y1='10.5' x2='14.5' y2='24.5' stroke='#111' stroke-width='2.6'/><line x1='14.5' y1='19' x2='21.5' y2='15' stroke='#111' stroke-width='1.7'/>`) },
+    "A-6e": { group: "A", name: "A-6e: Wlot drogi jednokierunkowej z lewej strony", svg: svgATriangle(`<line x1='17.5' y1='10.5' x2='17.5' y2='24.5' stroke='#111' stroke-width='2.6'/><line x1='17.5' y1='19' x2='10.5' y2='15' stroke='#111' stroke-width='1.7'/>`) },
+    "A-7":  { group: "A", name: "A-7: Ustąp pierwszeństwa", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><polygon points='2.5,5 29.5,5 16,29.5' fill='#ffdd00' stroke='#d32f2f' stroke-width='3.2' stroke-linejoin='round'/></svg>` },
+    "A-8":  { group: "A", name: "A-8: Skrzyżowanie o ruchu okrężnym", svg: svgATriangle(`<circle cx='16' cy='18.5' r='4.2' fill='none' stroke='#111' stroke-width='1.9' stroke-dasharray='6 2.5'/>`) },
+    "A-9":  { group: "A", name: "A-9: Przejazd kolejowy z zaporami", svg: svgATriangle(`<line x1='11' y1='17.5' x2='21' y2='17.5' stroke='#111' stroke-width='2'/><line x1='13' y1='14.5' x2='13' y2='21.5' stroke='#111' stroke-width='1.6'/><line x1='16' y1='14.5' x2='16' y2='21.5' stroke='#111' stroke-width='1.6'/><line x1='19' y1='14.5' x2='19' y2='21.5' stroke='#111' stroke-width='1.6'/>`) },
+    "A-10": { group: "A", name: "A-10: Przejazd kolejowy bez zapór", svg: svgATriangle(`<rect x='13' y='15' width='6' height='7' rx='1' fill='#111'/><rect x='14' y='11.5' width='2' height='3.5' fill='#111'/><circle cx='14' cy='23' r='1.3' fill='#111'/><circle cx='18' cy='23' r='1.3' fill='#111'/>`) },
+    "A-11": { group: "A", name: "A-11: Nierówna droga", svg: svgATriangle(`<path d='M8.5 22.5 Q12 18.5 14 21.5 Q16 17.5 18 21.5 Q20 18.5 23.5 22.5' fill='none' stroke='#111' stroke-width='2' stroke-linecap='round'/>`) },
+    "A-11a":{ group: "A", name: "A-11a: Próg zwalniający", svg: svgATriangle(`<path d='M8 22.5 H12.5 Q16 17 19.5 22.5 H24' fill='none' stroke='#111' stroke-width='2.2' stroke-linecap='round'/>`) },
+    "A-12a":{ group: "A", name: "A-12a: Zwężenie jezdni – dwustronne", svg: svgATriangle(`<path d='M12 24 V19 L14 16 V11 M20 24 V19 L18 16 V11' fill='none' stroke='#111' stroke-width='2.1' stroke-linecap='round'/>`) },
+    "A-12b":{ group: "A", name: "A-12b: Zwężenie jezdni – prawostronne", svg: svgATriangle(`<path d='M13.5 24 V11 M19.5 24 V19 L17 16 V11' fill='none' stroke='#111' stroke-width='2.1' stroke-linecap='round'/>`) },
+    "A-12c":{ group: "A", name: "A-12c: Zwężenie jezdni – lewostronne", svg: svgATriangle(`<path d='M18.5 24 V11 M12.5 24 V19 L15 16 V11' fill='none' stroke='#111' stroke-width='2.1' stroke-linecap='round'/>`) },
+    "A-13": { group: "A", name: "A-13: Ruchomy most", svg: svgATriangle(`<path d='M8.5 22.5 H13.5 L18 16.5 M18.5 22.5 H23.5' fill='none' stroke='#111' stroke-width='2.1' stroke-linecap='round'/>`) },
+    "A-14": { group: "A", name: "A-14: Roboty na drodze", svg: svgATriangle(`<circle cx='15' cy='13.5' r='1.6' fill='#111'/><path d='M15 15.5 L13.5 20.5 L12 24 M15 18 L18.5 21.5 M17.5 20 L21 24' fill='none' stroke='#111' stroke-width='1.8' stroke-linecap='round'/>`) },
+    "A-15": { group: "A", name: "A-15: Śliska jezdnia", svg: svgATriangle(`<rect x='13' y='11' width='6' height='4.5' rx='1' fill='#111'/><path d='M13 17 Q17.5 19 13 21.5 Q17 23 14.5 24.5 M19 17 Q14.5 19 19 21.5 Q15 23 17.5 24.5' fill='none' stroke='#111' stroke-width='1.4'/>`) },
+    "A-16": { group: "A", name: "A-16: Przejście dla pieszych", svg: svgATriangle(`<circle cx='16' cy='12.5' r='1.5' fill='#111'/><path d='M16 14.3 V19 L14 22.5 M16 19 L18 22.5 M13.5 16.5 L18.5 16.5' fill='none' stroke='#111' stroke-width='1.6' stroke-linecap='round'/><line x1='9.5' y1='24' x2='22.5' y2='24' stroke='#111' stroke-width='1.6' stroke-dasharray='2.5 2'/>`) },
+    "A-17": { group: "A", name: "A-17: Dzieci", svg: svgATriangle(`<circle cx='14' cy='13.5' r='1.5' fill='#111'/><circle cx='18.5' cy='15.5' r='1.3' fill='#111'/><path d='M14 15.2 V20 L12.5 24 M14 20 L15.5 24 M18.5 17 V20.5 L17.3 24 M18.5 20.5 L19.7 24 M14 17.5 L18.5 18.5' fill='none' stroke='#111' stroke-width='1.5' stroke-linecap='round'/>`) },
+    "A-18a":{ group: "A", name: "A-18a: Zwierzęta gospodarskie", svg: svgATriangle(`<rect x='12.5' y='16.5' width='7.5' height='4' rx='1' fill='#111'/><path d='M12.5 17 L10.5 15 V17.5 M13.5 20.5 V24 M19 20.5 V24' fill='none' stroke='#111' stroke-width='1.6' stroke-linecap='round'/>`) },
+    "A-18b":{ group: "A", name: "A-18b: Zwierzęta dzikie", svg: svgATriangle(`<path d='M12 24 L13.5 19 H18.5 L20 24 M13.5 19 L11.5 15.5 L10 12.5 M11.5 15.5 L13.5 13' fill='none' stroke='#111' stroke-width='1.7' stroke-linecap='round'/>`) },
+    "A-19": { group: "A", name: "A-19: Boczny wiatr", svg: svgATriangle(`<line x1='11.5' y1='12.5' x2='11.5' y2='24' stroke='#111' stroke-width='1.7'/><polygon points='11.5,13.5 21.5,15.5 21.5,18.5 11.5,17.5' fill='#d32f2f'/>`) },
+    "A-20": { group: "A", name: "A-20: Odcinek jezdni o ruchu dwukierunkowym", svg: svgATriangle(`<line x1='13.5' y1='23' x2='13.5' y2='14' stroke='#111' stroke-width='2'/><polygon points='13.5,11 11.2,14.5 15.8,14.5' fill='#111'/><line x1='18.5' y1='12' x2='18.5' y2='21' stroke='#111' stroke-width='2'/><polygon points='18.5,24 16.2,20.5 20.8,20.5' fill='#111'/>`) },
+    "A-21": { group: "A", name: "A-21: Tramwaj", svg: svgATriangle(`<rect x='12.5' y='13.5' width='7' height='8.5' rx='1' fill='#111'/><path d='M14 13.5 L16 11 L18 13.5' fill='none' stroke='#111' stroke-width='1.4'/><line x1='11.5' y1='23.5' x2='20.5' y2='23.5' stroke='#111' stroke-width='1.5'/>`) },
+    "A-22": { group: "A", name: "A-22: Niebezpieczny zjazd", svg: svgATriangle(`<polygon points='9,18 23,23.5 9,23.5' fill='#111'/><text x='14.5' y='17.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='5.8' fill='#111'>10%</text>`) },
+    "A-23": { group: "A", name: "A-23: Stromy podjazd", svg: svgATriangle(`<polygon points='23,18 23,23.5 9,23.5' fill='#111'/><text x='17.5' y='17.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='5.8' fill='#111'>10%</text>`) },
+    "A-24": { group: "A", name: "A-24: Rowerzyści", svg: svgATriangle(`<circle cx='12.5' cy='21.5' r='2.1' fill='none' stroke='#111' stroke-width='1.4'/><circle cx='19.5' cy='21.5' r='2.1' fill='none' stroke='#111' stroke-width='1.4'/><path d='M12.5 21.5 L15.5 17.5 H18 L19.5 21.5 M15.5 17.5 L16.5 21.5' fill='none' stroke='#111' stroke-width='1.3'/>`) },
+    "A-25": { group: "A", name: "A-25: Spadające odłamki skalne", svg: svgATriangle(`<polygon points='9,13 14,16 12,24 9,24' fill='#111'/><circle cx='17.5' cy='16' r='1.3' fill='#111'/><circle cx='20' cy='19.5' r='1.5' fill='#111'/><circle cx='17' cy='22.5' r='1.4' fill='#111'/>`) },
+    "A-26": { group: "A", name: "A-26: Lotnisko", svg: svgATriangle(`<path d='M16 11.5 V23 M10.5 17 H21.5 M13.5 22 H18.5' stroke='#111' stroke-width='2' stroke-linecap='round'/>`) },
+    "A-27": { group: "A", name: "A-27: Nabrzeże lub brzeg rzeki", svg: svgATriangle(`<rect x='9.5' y='18.5' width='7' height='5.5' fill='#111'/><path d='M17 22 Q19.5 20.5 22.5 22 M17 24 Q19.5 22.5 22.5 24' fill='none' stroke='#1565c0' stroke-width='1.4'/>`) },
+    "A-28": { group: "A", name: "A-28: Sypki żwir", svg: svgATriangle(`<rect x='11' y='13' width='6' height='5' rx='1' fill='#111'/><circle cx='19' cy='19' r='1.2' fill='#111'/><circle cx='21' cy='22' r='1.3' fill='#111'/><circle cx='17.5' cy='23' r='1.2' fill='#111'/>`) },
+    "A-29": { group: "A", name: "A-29: Sygnały świetlne", svg: svgATriangle(`<rect x='14' y='11.5' width='4' height='12.5' rx='0.8' fill='#111'/><circle cx='16' cy='14' r='1.2' fill='#d32f2f'/><circle cx='16' cy='17.8' r='1.2' fill='#ffdd00'/><circle cx='16' cy='21.5' r='1.2' fill='#28a745'/>`) },
+    "A-30": { group: "A", name: "A-30: Inne niebezpieczeństwo", svg: SVG_ZNAK_DEFAULT },
     "A-30 + Biegacze": {
-        name: "A-30 + T-27/Tabliczka: Uwaga biegacze / zawody",
+        group: "A",
+        name: "A-30 + Tabliczka: Uwaga biegacze / zawody",
         svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 36'><polygon points='16,2 28,22 4,22' fill='#ffdd00' stroke='#d32f2f' stroke-width='2.4' stroke-linejoin='round'/><line x1='16' y1='8' x2='16' y2='15' stroke='#111' stroke-width='2.2' stroke-linecap='round'/><circle cx='16' cy='18.2' r='1.3' fill='#111'/><rect x='4' y='24.5' width='24' height='10' rx='1' fill='#ffdd00' stroke='#111' stroke-width='1.1'/><text x='16' y='31.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='6.2' fill='#111'>BIEG</text></svg>`
     },
+    "A-31": { group: "A", name: "A-31: Niebezpieczne pobocze", svg: svgATriangle(`<rect x='11.5' y='14' width='5.5' height='4.5' rx='1' fill='#111' transform='rotate(18 14 16)'/><line x1='8.5' y1='22.5' x2='23.5' y2='22.5' stroke='#111' stroke-width='1.8'/>`) },
+    "A-32": { group: "A", name: "A-32: Oszronienie jezdni", svg: svgATriangle(`<g stroke='#1565c0' stroke-width='1.7' stroke-linecap='round'><line x1='16' y1='12.5' x2='16' y2='23.5'/><line x1='11.2' y1='15.2' x2='20.8' y2='20.8'/><line x1='20.8' y1='15.2' x2='11.2' y2='20.8'/></g>`) },
+    "A-33": { group: "A", name: "A-33: Zator drogowy", svg: svgATriangle(`<rect x='12.5' y='12.5' width='7' height='3' rx='0.6' fill='#111'/><rect x='12' y='16.8' width='8' height='3' rx='0.6' fill='#111'/><rect x='11.5' y='21' width='9' height='3' rx='0.6' fill='#111'/>`) },
+    "A-34": { group: "A", name: "A-34: Wypadek drogowy", svg: svgATriangle(`<rect x='10.5' y='18' width='6' height='4' rx='0.8' fill='#111'/><rect x='16.5' y='15.5' width='5.5' height='4' rx='0.8' fill='#111' transform='rotate(-25 19 17)'/>`) },
+
+    // --- GRUPA B: ZNAKI ZAKAZU ---
+    "B-1":  { group: "B", name: "B-1: Zakaz ruchu w obu kierunkach", svg: svgBWhite("") },
+    "B-2":  { group: "B", name: "B-2: Zakaz wjazdu", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14.5' fill='#d32f2f' stroke='#ffffff' stroke-width='1.2'/><rect x='6' y='13.2' width='20' height='5.6' rx='0.8' fill='#ffffff'/></svg>` },
+    "B-3":  { group: "B", name: "B-3: Zakaz wjazdu pojazdów silnikowych, z wyjątkiem motocykli jednośladowych", svg: svgBWhite(`<rect x='10' y='13' width='12' height='5' rx='1.2' fill='#111'/><path d='M11.5 13 L13 10 H19 L20.5 13 Z' fill='#111'/><circle cx='12.2' cy='18.5' r='1.7' fill='#111'/><circle cx='19.8' cy='18.5' r='1.7' fill='#111'/>`) },
+    "B-3a": { group: "B", name: "B-3a: Zakaz wjazdu autobusów", svg: svgBWhite(`<rect x='8' y='11.5' width='16' height='7' rx='1' fill='#111'/><rect x='9.5' y='12.8' width='13' height='2.6' fill='#fff'/><circle cx='11.5' cy='19' r='1.6' fill='#111'/><circle cx='20.5' cy='19' r='1.6' fill='#111'/>`) },
+    "B-4":  { group: "B", name: "B-4: Zakaz wjazdu motocykli", svg: svgBWhite(`<circle cx='11.5' cy='19' r='2.3' fill='none' stroke='#111' stroke-width='1.5'/><circle cx='20.5' cy='19' r='2.3' fill='none' stroke='#111' stroke-width='1.5'/><path d='M11.5 19 L15 14 H18.5 L20.5 19 M15 14 L14 11.5 H16.5' fill='none' stroke='#111' stroke-width='1.6'/>`) },
+    "B-5":  { group: "B", name: "B-5: Zakaz wjazdu samochodów ciężarowych", svg: svgBWhite(`<rect x='8.5' y='11' width='10.5' height='7' fill='#111'/><path d='M19 13 H22.5 L23.5 15.5 V18 H19 Z' fill='#111'/><circle cx='11.5' cy='18.8' r='1.6' fill='#111'/><circle cx='21' cy='18.8' r='1.6' fill='#111'/>`) },
+    "B-6":  { group: "B", name: "B-6: Zakaz wjazdu ciągników rolniczych", svg: svgBWhite(`<rect x='11' y='13' width='6' height='4' fill='#111'/><rect x='17' y='10.5' width='4.5' height='6.5' fill='#111'/><circle cx='12' cy='18.5' r='1.6' fill='#111'/><circle cx='19.5' cy='17.8' r='2.5' fill='#111'/>`) },
+    "B-7":  { group: "B", name: "B-7: Zakaz wjazdu pojazdów silnikowych z przyczepą", svg: svgBWhite(`<rect x='8' y='12.5' width='6.5' height='4.5' fill='#111'/><line x1='14.5' y1='15.5' x2='16.5' y2='15.5' stroke='#111' stroke-width='1.4'/><rect x='16.5' y='11.5' width='7' height='5.5' fill='#111'/><circle cx='10' cy='18' r='1.4' fill='#111'/><circle cx='13' cy='18' r='1.4' fill='#111'/><circle cx='20' cy='18' r='1.5' fill='#111'/>`) },
+    "B-8":  { group: "B", name: "B-8: Zakaz wjazdu pojazdów zaprzęgowych", svg: svgBWhite(`<rect x='15.5' y='13.5' width='7.5' height='3.5' fill='#111'/><circle cx='19' cy='18' r='2' fill='none' stroke='#111' stroke-width='1.4'/><path d='M9 18 V13.5 L12 12 L13.5 14.5 V18' fill='none' stroke='#111' stroke-width='1.5'/>`) },
+    "B-9":  { group: "B", name: "B-9: Zakaz wjazdu rowerów", svg: svgBWhite(`<circle cx='11.5' cy='18.5' r='2.6' fill='none' stroke='#111' stroke-width='1.5'/><circle cx='20.5' cy='18.5' r='2.6' fill='none' stroke='#111' stroke-width='1.5'/><path d='M11.5 18.5 L15 14 H18.5 L20.5 18.5 M15 14 L16.2 18.5 M18 12.5 H19.5' fill='none' stroke='#111' stroke-width='1.4'/>`) },
+    "B-10": { group: "B", name: "B-10: Zakaz wjazdu motorowerów", svg: svgBWhite(`<circle cx='11.5' cy='19' r='2.2' fill='none' stroke='#111' stroke-width='1.4'/><circle cx='20.5' cy='19' r='2.2' fill='none' stroke='#111' stroke-width='1.4'/><path d='M11.5 19 L15.5 15.5 H18.5 L20.5 19 M18 13 V15.5' fill='none' stroke='#111' stroke-width='1.5'/>`) },
+    "B-11": { group: "B", name: "B-11: Zakaz wjazdu wózków rowerowych i rowerów wielośladowych", svg: svgBWhite(`<circle cx='11' cy='18.5' r='2.2' fill='none' stroke='#111' stroke-width='1.4'/><circle cx='21' cy='18.5' r='2.2' fill='none' stroke='#111' stroke-width='1.4'/><rect x='10' y='13.5' width='7' height='3.5' fill='#111'/><path d='M17 16 L21 18.5 M18.5 13 V16' stroke='#111' stroke-width='1.4'/>`) },
+    "B-12": { group: "B", name: "B-12: Zakaz wjazdu wózków ręcznych", svg: svgBWhite(`<path d='M10 12 L13 13.5 H21 L19.5 17 H13.5 L12.5 13.5' fill='none' stroke='#111' stroke-width='1.5'/><circle cx='14.5' cy='19' r='1.7' fill='#111'/><circle cx='19' cy='19' r='1.7' fill='#111'/>`) },
+    "B-13": { group: "B", name: "B-13: Zakaz wjazdu pojazdów z materiałami wybuchowymi lub łatwo zapalnymi", svg: svgBWhite(`<path d='M16 9 C18.5 12 20 14 18.5 16.5 C17.5 18 14.5 18 13.5 16.5 C12 14 14 12 16 9 Z' fill='#d32f2f'/><rect x='11' y='18' width='10' height='3' fill='#111'/>`) },
+    "B-13a":{ group: "B", name: "B-13a: Zakaz wjazdu pojazdów z materiałami niebezpiecznymi", svg: svgBWhite(`<rect x='11.5' y='10' width='9' height='6.5' fill='#ff6f00' stroke='#111' stroke-width='1'/><rect x='10.5' y='17.5' width='11' height='3' fill='#111'/>`) },
+    "B-14": { group: "B", name: "B-14: Zakaz wjazdu pojazdów z materiałami mogącymi skazić wodę", svg: svgBWhite(`<rect x='11' y='10' width='10' height='6' fill='#ff6f00' stroke='#111' stroke-width='1'/><path d='M9 19 Q12.5 17.5 16 19 T23 19 M9 21.5 Q12.5 20 16 21.5 T23 21.5' fill='none' stroke='#1565c0' stroke-width='1.4'/>`) },
+    "B-15": { group: "B", name: "B-15: Zakaz wjazdu pojazdów o szerokości ponad 2 m", svg: svgBWhite(`<polygon points='7,16 11,13.5 11,18.5' fill='#111'/><polygon points='25,16 21,13.5 21,18.5' fill='#111'/><text x='16' y='18.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='7.2' fill='#111'>2m</text>`) },
+    "B-16": { group: "B", name: "B-16: Zakaz wjazdu pojazdów o wysokości ponad 3,5 m", svg: svgBWhite(`<polygon points='16,6.5 13.5,10 18.5,10' fill='#111'/><polygon points='16,25.5 13.5,22 18.5,22' fill='#111'/><text x='16' y='18.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='6.8' fill='#111'>3,5m</text>`) },
+    "B-17": { group: "B", name: "B-17: Zakaz wjazdu pojazdów o długości ponad 10 m", svg: svgBWhite(`<rect x='9.5' y='11.5' width='13' height='4.5' fill='#111'/><text x='16' y='22' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='6.8' fill='#111'>10m</text>`) },
+    "B-18": { group: "B", name: "B-18: Zakaz wjazdu pojazdów o rzeczywistej masie całkowitej ponad 7 t", svg: svgBWhite(`<text x='16' y='19' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='9.5' fill='#111'>7 t</text>`) },
+    "B-19": { group: "B", name: "B-19: Zakaz wjazdu pojazdów o nacisku pojedynczej osi napędowej większym niż 8 t", svg: svgBWhite(`<text x='16' y='16.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='8.2' fill='#111'>8 t</text><line x1='9' y1='19.5' x2='23' y2='19.5' stroke='#111' stroke-width='1.5'/><circle cx='11' cy='19.5' r='1.8' fill='#111'/><circle cx='21' cy='19.5' r='1.8' fill='#111'/>`) },
+    "B-20": { group: "B", name: "B-20: STOP", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><polygon points='10.5,2.5 21.5,2.5 29.5,10.5 29.5,21.5 21.5,29.5 10.5,29.5 2.5,21.5 2.5,10.5' fill='#d32f2f' stroke='#ffffff' stroke-width='1.6'/><text x='16' y='18.8' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='8' fill='#ffffff'>STOP</text></svg>` },
+    "B-21": { group: "B", name: "B-21: Zakaz skręcania w lewo", svg: svgBWhiteSlash(`<path d='M19 23 V14 Q19 11 16 11 H11' fill='none' stroke='#111' stroke-width='2.4' stroke-linecap='round'/><polygon points='8,11 12.5,8 12.5,14' fill='#111'/>`) },
+    "B-22": { group: "B", name: "B-22: Zakaz skręcania w prawo", svg: svgBWhiteSlash(`<path d='M13 23 V14 Q13 11 16 11 H21' fill='none' stroke='#111' stroke-width='2.4' stroke-linecap='round'/><polygon points='24,11 19.5,8 19.5,14' fill='#111'/>`) },
+    "B-23": { group: "B", name: "B-23: Zakaz zawracania", svg: svgBWhiteSlash(`<path d='M20 22 V14 A4 4 0 0 0 12 14 V19' fill='none' stroke='#111' stroke-width='2.3' stroke-linecap='round'/><polygon points='12,22.5 9.2,18 14.8,18' fill='#111'/>`) },
+    "B-24": { group: "B", name: "B-24: Koniec zakazu zawracania", svg: svgBEnd(`<path d='M20 22 V14 A4 4 0 0 0 12 14 V19' fill='none' stroke='#666' stroke-width='2.2' stroke-linecap='round'/><polygon points='12,22.5 9.2,18 14.8,18' fill='#666'/>`) },
+    "B-25": { group: "B", name: "B-25: Zakaz wyprzedzania", svg: svgBWhite(`<rect x='17.5' y='13.5' width='5.5' height='5' rx='1' fill='#111'/><rect x='9' y='13.5' width='5.5' height='5' rx='1' fill='#d32f2f'/>`) },
+    "B-26": { group: "B", name: "B-26: Zakaz wyprzedzania przez samochody ciężarowe", svg: svgBWhite(`<rect x='17.5' y='13.5' width='5.5' height='5' rx='1' fill='#111'/><rect x='8.5' y='12' width='6.5' height='6.5' rx='0.8' fill='#d32f2f'/>`) },
+    "B-27": { group: "B", name: "B-27: Koniec zakazu wyprzedzania", svg: svgBEnd(`<rect x='17.5' y='13.5' width='5.5' height='5' rx='1' fill='#666'/><rect x='9' y='13.5' width='5.5' height='5' rx='1' fill='#666'/>`) },
+    "B-28": { group: "B", name: "B-28: Koniec zakazu wyprzedzania przez samochody ciężarowe", svg: svgBEnd(`<rect x='17.5' y='13.5' width='5.5' height='5' rx='1' fill='#666'/><rect x='8.5' y='12' width='6.5' height='6.5' rx='0.8' fill='#666'/>`) },
+    "B-29": { group: "B", name: "B-29: Zakaz używania sygnałów dźwiękowych", svg: svgBWhiteSlash(`<path d='M10 15 H14 L19 11.5 V20.5 L14 17 H10 Z' fill='#111'/>`) },
+    "B-30": { group: "B", name: "B-30: Koniec zakazu używania sygnałów dźwiękowych", svg: svgBEnd(`<path d='M10 15 H14 L19 11.5 V20.5 L14 17 H10 Z' fill='#666'/>`) },
+    "B-31": { group: "B", name: "B-31: Pierwszeństwo dla nadjeżdżających z przeciwka", svg: svgBWhite(`<line x1='12.5' y1='10' x2='12.5' y2='21' stroke='#d32f2f' stroke-width='2.3'/><polygon points='12.5,23.5 9.8,19.5 15.2,19.5' fill='#d32f2f'/><line x1='19.5' y1='22' x2='19.5' y2='11' stroke='#111' stroke-width='2.3'/><polygon points='19.5,8.5 16.8,12.5 22.2,12.5' fill='#111'/>`) },
+    "B-32": { group: "B", name: "B-32: Stój – kontrola drogowa", svg: svgBWhite(`<line x1='6' y1='16' x2='26' y2='16' stroke='#111' stroke-width='2.4'/><text x='16' y='13.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='5.5' fill='#111'>STÓJ</text>`) },
+    "B-33 (30)": { group: "B", name: "B-33: Ograniczenie prędkości do 30 km/h", svg: svgBWhite(`<text x='16' y='20.2' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='11.5' fill='#111'>30</text>`) },
+    "B-33 (40)": { group: "B", name: "B-33: Ograniczenie prędkości do 40 km/h", svg: svgBWhite(`<text x='16' y='20.2' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='11.5' fill='#111'>40</text>`) },
+    "B-33 (50)": { group: "B", name: "B-33: Ograniczenie prędkości do 50 km/h", svg: svgBWhite(`<text x='16' y='20.2' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='11.5' fill='#111'>50</text>`) },
+    "B-34": { group: "B", name: "B-34: Koniec ograniczenia prędkości", svg: svgBEnd(`<text x='16' y='20' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='10.5' fill='#666'>30</text>`) },
+    "B-35": { group: "B", name: "B-35: Zakaz postoju", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.8'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.4'/></svg>` },
+    "B-36": { group: "B", name: "B-36: Zakaz zatrzymywania się", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.8'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.2'/><line x1='25' y1='7' x2='7' y2='25' stroke='#d32f2f' stroke-width='3.2'/></svg>` },
+    "B-36 + T-24": { group: "B", name: "B-36 + T-24: Zakaz zatrzymywania się (odholowanie pojazdu)", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 36'><circle cx='16' cy='12.5' r='11' fill='#1565c0' stroke='#d32f2f' stroke-width='3'/><line x1='9' y1='5.5' x2='23' y2='19.5' stroke='#d32f2f' stroke-width='2.6'/><line x1='23' y1='5.5' x2='9' y2='19.5' stroke='#d32f2f' stroke-width='2.6'/><rect x='5' y='25.5' width='22' height='9' rx='1' fill='#ffffff' stroke='#111' stroke-width='1.1'/><text x='16' y='32' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='6.5' fill='#111'>T-24</text></svg>` },
+    "B-37": { group: "B", name: "B-37: Zakaz postoju w dni nieparzyste", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.6'/><rect x='14.6' y='8.5' width='2.8' height='15' fill='#ffffff'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.2'/></svg>` },
+    "B-38": { group: "B", name: "B-38: Zakaz postoju w dni parzyste", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#1565c0' stroke='#d32f2f' stroke-width='3.6'/><rect x='12.2' y='8.5' width='2.5' height='15' fill='#ffffff'/><rect x='17.3' y='8.5' width='2.5' height='15' fill='#ffffff'/><line x1='7' y1='7' x2='25' y2='25' stroke='#d32f2f' stroke-width='3.2'/></svg>` },
+    "B-39": { group: "B", name: "B-39: Strefa ograniczonego postoju", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='3' width='26' height='26' rx='2' fill='#ffffff' stroke='#111' stroke-width='1.5'/><circle cx='16' cy='14.5' r='8.5' fill='#1565c0' stroke='#d32f2f' stroke-width='2.3'/><line x1='10.5' y1='9' x2='21.5' y2='20' stroke='#d32f2f' stroke-width='2.2'/><text x='16' y='27.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='5.2' fill='#111'>STREFA</text></svg>` },
+    "B-40": { group: "B", name: "B-40: Koniec strefy ograniczonego postoju", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='3' width='26' height='26' rx='2' fill='#e0e0e0' stroke='#666' stroke-width='1.5'/><circle cx='16' cy='14.5' r='8.5' fill='#888' stroke='#555' stroke-width='2'/><line x1='5' y1='27' x2='27' y2='5' stroke='#444' stroke-width='2.5'/></svg>` },
+    "B-41": { group: "B", name: "B-41: Zakaz ruchu pieszych", svg: svgBWhite(`<circle cx='16' cy='10.5' r='1.8' fill='#111'/><path d='M16 12.5 V18 L13.5 23 M16 18 L18.5 23 M13 15 L19 15' fill='none' stroke='#111' stroke-width='1.7' stroke-linecap='round'/>`) },
+    "B-42": { group: "B", name: "B-42: Koniec zakazów", svg: svgBEnd("") },
+    "B-43": { group: "B", name: "B-43: Strefa ograniczonej prędkości", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='3' width='26' height='26' rx='2' fill='#ffffff' stroke='#111' stroke-width='1.5'/><circle cx='16' cy='14.5' r='8.5' fill='#ffffff' stroke='#d32f2f' stroke-width='2.3'/><text x='16' y='17.2' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='7.5' fill='#111'>30</text><text x='16' y='27.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='5.2' fill='#111'>STREFA</text></svg>` },
+    "B-44": { group: "B", name: "B-44: Koniec strefy ograniczonej prędkości", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='3' width='26' height='26' rx='2' fill='#e0e0e0' stroke='#666' stroke-width='1.5'/><circle cx='16' cy='14.5' r='8.5' fill='#ffffff' stroke='#666' stroke-width='2'/><text x='16' y='17.2' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='7.5' fill='#666'>30</text><line x1='5' y1='27' x2='27' y2='5' stroke='#444' stroke-width='2.5'/></svg>` },
+
+    // --- GRUPA C: ZNAKI NAKAZU ---
+    "C-1":  { group: "C", name: "C-1: Nakaz jazdy w prawo przed znakiem", svg: svgCBlue(`<path d='M9 12 H17 Q20 12 20 15 V21' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='20,25 16.2,19.5 23.8,19.5' fill='#ffffff'/>`) },
+    "C-2":  { group: "C", name: "C-2: Nakaz jazdy w prawo za znakiem", svg: svgCBlue(`<path d='M12 24 V15 Q12 12 15 12 H21' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='25,12 19.5,8.2 19.5,15.8' fill='#ffffff'/>`) },
+    "C-3":  { group: "C", name: "C-3: Nakaz jazdy w lewo przed znakiem", svg: svgCBlue(`<path d='M23 12 H15 Q12 12 12 15 V21' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='12,25 8.2,19.5 15.8,19.5' fill='#ffffff'/>`) },
+    "C-4":  { group: "C", name: "C-4: Nakaz jazdy w lewo za znakiem", svg: svgCBlue(`<path d='M20 24 V15 Q20 12 17 12 H11' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-linecap='round'/><polygon points='7,12 12.5,8.2 12.5,15.8' fill='#ffffff'/>`) },
+    "C-5":  { group: "C", name: "C-5: Nakaz jazdy prosto", svg: svgCBlue(`<line x1='16' y1='24' x2='16' y2='11' stroke='#ffffff' stroke-width='3' stroke-linecap='round'/><polygon points='16,6.5 11.5,13 20.5,13' fill='#ffffff'/>`) },
+    "C-6":  { group: "C", name: "C-6: Nakaz jazdy prosto lub w prawo", svg: svgCBlue(`<line x1='13' y1='24' x2='13' y2='10.5' stroke='#ffffff' stroke-width='2.6' stroke-linecap='round'/><polygon points='13,6.5 9.5,12 16.5,12' fill='#ffffff'/><path d='M13 17 H21' fill='none' stroke='#ffffff' stroke-width='2.6'/><polygon points='25,17 20,13.8 20,20.2' fill='#ffffff'/>`) },
+    "C-7":  { group: "C", name: "C-7: Nakaz jazdy prosto lub w lewo", svg: svgCBlue(`<line x1='19' y1='24' x2='19' y2='10.5' stroke='#ffffff' stroke-width='2.6' stroke-linecap='round'/><polygon points='19,6.5 15.5,12 22.5,12' fill='#ffffff'/><path d='M19 17 H11' fill='none' stroke='#ffffff' stroke-width='2.6'/><polygon points='7,17 12,13.8 12,20.2' fill='#ffffff'/>`) },
+    "C-8":  { group: "C", name: "C-8: Nakaz jazdy w prawo lub w lewo", svg: svgCBlue(`<path d='M16 24 V15 H22 M16 15 H10' fill='none' stroke='#ffffff' stroke-width='2.6' stroke-linecap='round'/><polygon points='25.5,15 20.5,11.8 20.5,18.2' fill='#ffffff'/><polygon points='6.5,15 11.5,11.8 11.5,18.2' fill='#ffffff'/>`) },
+    "C-9":  { group: "C", name: "C-9: Nakaz jazdy z prawej strony znaku", svg: svgCBlue(`<line x1='10' y1='9' x2='21' y2='20' stroke='#ffffff' stroke-width='3' stroke-linecap='round'/><polygon points='23.5,22.5 16.5,21.5 22.5,15.5' fill='#ffffff'/>`) },
+    "C-10": { group: "C", name: "C-10: Nakaz jazdy z lewej strony znaku", svg: svgCBlue(`<line x1='22' y1='9' x2='11' y2='20' stroke='#ffffff' stroke-width='3' stroke-linecap='round'/><polygon points='8.5,22.5 15.5,21.5 9.5,15.5' fill='#ffffff'/>`) },
+    "C-11": { group: "C", name: "C-11: Nakaz jazdy z prawej lub lewej strony znaku", svg: svgCBlue(`<line x1='16' y1='8' x2='22.5' y2='20' stroke='#ffffff' stroke-width='2.5' stroke-linecap='round'/><polygon points='24,23 18.5,21.2 23.8,17.2' fill='#ffffff'/><line x1='16' y1='8' x2='9.5' y2='20' stroke='#ffffff' stroke-width='2.5' stroke-linecap='round'/><polygon points='8,23 13.5,21.2 8.2,17.2' fill='#ffffff'/>`) },
+    "C-12": { group: "C", name: "C-12: Ruch okrężny (rondo)", svg: svgCBlue(`<path d='M16 8.5 A7.5 7.5 0 1 1 9 18.5' fill='none' stroke='#ffffff' stroke-width='2.6' stroke-linecap='round'/><polygon points='16,5.5 20.5,9.2 15.5,11.5' fill='#ffffff'/>`) },
+    "C-13": { group: "C", name: "C-13: Droga dla rowerów", svg: svgCBlue(`<circle cx='11.5' cy='18.5' r='2.8' fill='none' stroke='#ffffff' stroke-width='1.6'/><circle cx='20.5' cy='18.5' r='2.8' fill='none' stroke='#ffffff' stroke-width='1.6'/><path d='M11.5 18.5 L15 13.5 H18.5 L20.5 18.5 M15 13.5 L16.2 18.5 M18 12 H19.5' fill='none' stroke='#ffffff' stroke-width='1.5'/>`) },
+    "C-13a":{ group: "C", name: "C-13a: Koniec drogi dla rowerów", svg: svgCEnd(`<circle cx='11.5' cy='18.5' r='2.8' fill='none' stroke='#ffffff' stroke-width='1.6'/><circle cx='20.5' cy='18.5' r='2.8' fill='none' stroke='#ffffff' stroke-width='1.6'/><path d='M11.5 18.5 L15 13.5 H18.5 L20.5 18.5' fill='none' stroke='#ffffff' stroke-width='1.5'/>`) },
+    "C-14": { group: "C", name: "C-14: Prędkość minimalna (30 km/h)", svg: svgCBlue(`<text x='16' y='20.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='12' fill='#ffffff'>30</text>`) },
+    "C-15": { group: "C", name: "C-15: Koniec minimalnej prędkości", svg: svgCEnd(`<text x='16' y='20.5' text-anchor='middle' font-family='Arial, sans-serif' font-weight='bold' font-size='12' fill='#ffffff'>30</text>`) },
+    "C-16": { group: "C", name: "C-16: Droga dla pieszych", svg: svgCBlue(`<circle cx='16' cy='9.5' r='2' fill='#ffffff'/><path d='M16 12 V18.5 L13 24.5 M16 18.5 L19 24.5 M12.5 15 L19.5 15' fill='none' stroke='#ffffff' stroke-width='1.9' stroke-linecap='round'/>`) },
+    "C-16a":{ group: "C", name: "C-16a: Koniec drogi dla pieszych", svg: svgCEnd(`<circle cx='16' cy='9.5' r='2' fill='#ffffff'/><path d='M16 12 V18.5 L13 24.5 M16 18.5 L19 24.5 M12.5 15 L19.5 15' fill='none' stroke='#ffffff' stroke-width='1.9' stroke-linecap='round'/>`) },
+    "C-17": { group: "C", name: "C-17: Nakazany kierunek jazdy dla pojazdów z materiałami niebezpiecznymi", svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='3' width='26' height='26' rx='2' fill='#ffffff' stroke='#111' stroke-width='1.5'/><circle cx='16' cy='11.5' r='6.5' fill='#1565c0'/><line x1='16' y1='15' x2='16' y2='8.5' stroke='#ffffff' stroke-width='2'/><polygon points='16,6.5 13.5,9.5 18.5,9.5' fill='#ffffff'/><rect x='10.5' y='20' width='11' height='6' fill='#ff6f00' stroke='#111' stroke-width='1'/></svg>` },
+    "C-18": { group: "C", name: "C-18: Nakaz używania łańcuchów przeciwpoślizgowych", svg: svgCBlue(`<circle cx='16' cy='16' r='7.5' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-dasharray='2.5 2'/>`) },
+    "C-19": { group: "C", name: "C-19: Koniec nakazu używania łańcuchów przeciwpoślizgowych", svg: svgCEnd(`<circle cx='16' cy='16' r='7.5' fill='none' stroke='#ffffff' stroke-width='2.8' stroke-dasharray='2.5 2'/>`) },
+
+    // --- DODATKOWE ZNAKI INFORMACYJNE (D) ---
     "D-4a": {
+        group: "D",
         name: "D-4a: Droga bez przejazdu (ślepa ulica)",
         svg: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='3' width='26' height='26' rx='2' fill='#1565c0' stroke='#ffffff' stroke-width='1.5'/><rect x='14' y='11' width='4' height='15' fill='#ffffff'/><rect x='10' y='8' width='12' height='3.5' fill='#d32f2f'/></svg>`
     }
@@ -706,10 +799,23 @@ function badgeHtml(type, signCode = null) {
 }
 
 function buildSignOptionsHtml(selectedCode) {
-    return Object.entries(TRAFFIC_SIGNS).map(([code, info]) => {
+    const groups = {
+        "A": { label: "Znaki ostrzegawcze (Grupa A)", items: [] },
+        "B": { label: "Znaki zakazu (Grupa B)", items: [] },
+        "C": { label: "Znaki nakazu (Grupa C)", items: [] },
+        "D": { label: "Znaki informacyjne (Grupa D)", items: [] }
+    };
+
+    Object.entries(TRAFFIC_SIGNS).forEach(([code, info]) => {
+        const g = groups[info.group] ? info.group : "D";
         const sel = code === selectedCode ? "selected" : "";
-        return `<option value="${escapeHtml(code)}" ${sel}>${escapeHtml(info.name)}</option>`;
-    }).join("");
+        groups[g].items.push(`<option value="${escapeHtml(code)}" ${sel}>${escapeHtml(info.name)}</option>`);
+    });
+
+    return Object.values(groups)
+        .filter(g => g.items.length > 0)
+        .map(g => `<optgroup label="${escapeHtml(g.label)}">${g.items.join("")}</optgroup>`)
+        .join("");
 }
 
 function updateSignPreview(selectId, previewId) {
@@ -858,7 +964,6 @@ function loadFromLocalStorage() {
     }
 }
 
-// Próbuje wykryć kod znaku z uwag przy imporcie starszych plików (np. "B-36 + T-24")
 function extractSignFromNotes(notes) {
     if (!notes) return "";
     const upper = String(notes).toUpperCase();
@@ -1157,7 +1262,7 @@ function exportGPX(routeKey) {
     }
 
     let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    gpxContent += `<gpx version="1.1" creator="System Zabezpieczenia Biegu v3.2" xmlns="http://www.topografix.com/GPX/1/1">\n`;
+    gpxContent += `<gpx version="1.1" creator="System Zabezpieczenia Biegu v3.4" xmlns="http://www.topografix.com/GPX/1/1">\n`;
     gpxContent += `  <trk>\n`;
     gpxContent += `    <name>Trasa ${routeKey} - ${escapeHtml(projectName)}</name>\n`;
     gpxContent += `    <trkseg>\n`;
@@ -1245,7 +1350,7 @@ function showAddPopup(latlng) {
     ` : "";
 
     const popupContent = `
-        <div class="popup-form" style="width:255px">
+        <div class="popup-form" style="width:265px">
             <b style="color:${CONFIG_TYPES[currentMode].color}; font-size:14px;">${badgeHtml(currentMode, isSign ? DEFAULT_SIGN_CODE : null)}Dodaj: ${currentMode}</b><br>
 
             ${signSelectorHtml}
@@ -1358,7 +1463,7 @@ function updatePopupContent(point) {
     ` : "";
 
     point.marker.bindPopup(`
-        <div class="popup-form" style="width:255px">
+        <div class="popup-form" style="width:265px">
             <b style="color:${cfg.color}; font-size:14px;">${badgeHtml(point.typ, point.znak)}Edycja: ${point.typ}</b><br>
 
             ${signEditorHtml}
@@ -1620,7 +1725,7 @@ function updateStats() {
             signCounts[code] = (signCounts[code] || 0) + 1;
         });
 
-        Object.keys(signCounts).sort((a, b) => a.localeCompare(b, 'pl')).forEach(code => {
+        Object.keys(signCounts).sort((a, b) => a.localeCompare(b, 'pl', { numeric: true })).forEach(code => {
             const shortDesc = (TRAFFIC_SIGNS[code]?.name || "").replace(/^[^:]+:\s*/, "");
             htmlSigns += `
                 <tr>
@@ -1672,7 +1777,7 @@ function clearProject() {
 
 function exportJSON() {
     const exportData = {
-        version: "3.2",
+        version: "3.4",
         projectName: projectName,
         generatedAt: new Date().toISOString(),
         routeVisibility: routeVisibility,
